@@ -8,23 +8,21 @@
 import Foundation
 import Combine
 
-class MarvelRequest<Fetched> where Fetched: Codable, Fetched: Hashable {
+class MarvelRequest<Fetched> where Fetched: Codable {
     
     // MARK: - Fetched results
     
-    private (set) var results = CurrentValueSubject<Set<Fetched>, Never>([]) // Consider using PassThrough?
-    
-    var total = 0 // The total number of resources available given the current filter set
+    private (set) var results = PassthroughSubject<Array<Fetched>, Never>()
     
     // MARK: - Shared Request Parameter(s)
     
-    var limit = 10 // range = (1, 100]
+    var limit = 10
     var offset = 0
     
     // MARK: - Subclasser override(s)
     
     var query: String { "" }
-    func decode(_ json: Data) -> Set<Fetched> { [] }
+    func decode(_ json: Data) -> Array<Fetched> { [] }
     
     // MARK: - Private Data
     
@@ -33,34 +31,52 @@ class MarvelRequest<Fetched> where Fetched: Codable, Fetched: Hashable {
     
     // MARK: - Fetching
     
-    func fetch() { // Consider to return the data task publisher
-        if let url = authorizedURL {
-            print("Fetching \(url)")
-            fetchCancellable = URLSession.shared.dataTaskPublisher(for: url)
-                .map { [weak self] data, _ in self?.decode(data) ?? [] }
-                .replaceError(with: [])
-                .receive(on: DispatchQueue.main)
-                .sink { [weak self] results in
-                    if results.isEmpty {
-                        print("returned empty set")
-                        return
+    func fetch(useCache: Bool = true) {
+        if !useCache || !fetchFromCache() {
+            if let url = authorizedURL {
+                print("Fetching \(url)")
+                fetchCancellable = URLSession.shared.dataTaskPublisher(for: url)
+                    .map { [weak self] data, _ in self?.decode(data) ?? [] }
+                    .replaceError(with: [])
+                    .receive(on: DispatchQueue.main)
+                    .sink { [weak self] results in
+                        if results.isEmpty { print("returned empty set"); return }
+                        if useCache { self?.cache(results) }
+                        self?.results.send(results)
+                        print("successful fetching")
                     }
-                    self?.handleResults(results)
-                }
-        } else {
-            print("url does not valid/exist")
+            } else {
+                print("invalid url!")
+            }
         }
     }
     
-    func stopFetching() {
-        fetchCancellable?.cancel()
+    func stopFetching() { fetchCancellable?.cancel() }
+    
+    // MARK: - Caching
+    
+    var cacheKey: String? { nil } // Overrided by children
+    private var cachedData: Data? { cacheKey != nil ? UserDefaults.standard.data(forKey: cacheKey!) : nil }
+    
+    private func cache(_ newResults: Array<Fetched>) {
+        if let key = cacheKey, let data = try? JSONEncoder().encode(newResults) {
+            print("caching data for key \(key)")
+            UserDefaults.standard.set(data, forKey: key)
+        }
     }
     
-    // trial version, just emits the recently results from URLSession
-    // may publishes the latest accumulate
-    private func handleResults(_ newResults: Set<Fetched>) {
-        results.value = newResults
-        print("successful fetching")
+    private func fetchFromCache() -> Bool {
+        if let key = cacheKey, let data = cachedData {
+            print("Fetching cached data (key: \(key))")
+            if let decodedData = try? JSONDecoder().decode(Array<Fetched>.self, from: data) {
+                results.send(decodedData)
+                print("successfully fetching from cache")
+                return true
+            } else {
+                print("Can't decode the cachedData")
+            }
+        }
+        return false
     }
 }
 
@@ -73,7 +89,13 @@ extension String {
         }
     }
     
-    // Add argument with date argument?
+//    mutating func addMarvelArgument(_ name: String, _ value: Date?) {
+//        if value != nil {
+//            let dateFormatter = DateFormatter()
+//            dateFormatter.dateFormat = "MM-dd-yyyy"
+//            addMarvelArgument(name, dateFormatter.string(from: value!))
+//        }
+//    }
     
     mutating func addMarvelArgument(_ name: String, _ value: String? = nil) {
         if value != nil {

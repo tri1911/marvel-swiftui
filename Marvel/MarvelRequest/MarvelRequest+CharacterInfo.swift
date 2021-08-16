@@ -16,7 +16,12 @@ struct CharacterInfo: Codable, Hashable, Identifiable {
     let urls: [CharacterURL] // A set of public web site URLs for the resource
     let thumbnail: CharacterImage // The representative image for this character
     
-    var modifiedDate: Date? { ISO8601DateFormatter().date(from: modified) }
+    var modifiedDate: String {
+        let date = ISO8601DateFormatter().date(from: modified) ?? Date()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MM-dd-yyyy"
+        return dateFormatter.string(from: date)
+    }
 
     struct CharacterURL: Codable, Hashable {
         let type: String // A text identifier for the URL
@@ -46,68 +51,75 @@ struct CharacterInfo: Codable, Hashable, Identifiable {
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
+struct CharacterFilter: Hashable {
+    var name: String?
+    var nameStartsWith: String?
+    var comicId: Int?
+    var modifiedSince: String?
+    var orderBy: String?
+}
+
 class CharacterRequest: MarvelRequest<CharacterInfo>, Codable {
     
+    static var requests = [CharacterFilter:CharacterRequest]()
+    
+    static func create(_ filter: CharacterFilter, limit: Int?) -> (CharacterRequest, Bool) {
+        let request = requests[filter]
+        if request == nil {
+            let request = CharacterRequest(filter, limit: limit)
+            requests[filter] = request
+            return (request, true)
+        } else {
+            return (request!, false)
+        }
+    }
+    
     // MARK: - Request Parameter(s)
-        
-    private(set) var comicId: Int?
-    private(set) var name: String?
-    private(set) var nameStartsWith: String?
+    
+    private(set) var filter: CharacterFilter?
     
     // MARK: - Initilization
     
-    init(comicId: Int? = nil, name: String? = nil, nameStartsWith: String? = nil, limit: Int? = nil, offset: Int? = nil) {
+    private init(_ filter: CharacterFilter, limit: Int?) {
+        print("Creating the new Character Request...")
         super.init()
-        self.comicId = comicId
-        self.name = name
-        self.nameStartsWith = nameStartsWith
+        self.filter = filter
         if limit != nil { self.limit = limit! }
-        if offset != nil { self.offset = offset! }
-    }
-    
-    convenience init(search: CharacterFilterSet, limit: Int? = nil, offset: Int? = nil) {
-        print("Created new Request")
-        self.init(comicId: search.comicId, name:search.name, nameStartsWith: search.nameStartsWith, limit: limit, offset: offset)
     }
     
     // MARK: - Overrides
     
+    override var cacheKey: String? { "\(type(of: self)).\(query)" }
+    
     override var query: String {
-        var request = (comicId != nil ? "comics/\(comicId!)/" : "") + "characters?"
-        request.addMarvelArgument("name", name)
-        request.addMarvelArgument("nameStartsWith", nameStartsWith)
+        var request = "characters?"
+        request.addMarvelArgument("name", filter?.name)
+        request.addMarvelArgument("nameStartsWith", filter?.nameStartsWith)
+        request.addMarvelArgument("comics", filter?.comicId)
+        request.addMarvelArgument("modifiedSince", filter?.modifiedSince)
+        request.addMarvelArgument("orderBy", filter?.orderBy)
         request.addMarvelArgument("limit", max(1, min(limit, 100)))
         request.addMarvelArgument("offset", offset)
         return request
     }
     
-    override func decode(_ json: Data) -> Set<CharacterInfo> {
-        if let result = (try? JSONDecoder().decode(CharacterRequest.self, from: json))?.marvelResultData {
-            self.offset += result.count // Update the next offset
-            self.total = result.total // TODO: avoid updating the same thing multiple times
-            return Set(result.characters)
-        }
-        return []
+    override func decode(_ json: Data) -> Array<CharacterInfo> {
+        let result = (try? JSONDecoder().decode(CharacterRequest.self, from: json))?.marvelResultData
+        return result?.characters ?? []
     }
     
     // MARK: - Decoding Data Structure
     
-    private var marvelResultData: CharacterDataContainer? // The results returned by the call
+    private var marvelResultData: CharacterDataContainer?
     
     private enum CodingKeys: String, CodingKey {
         case marvelResultData = "data"
     }
     
     struct CharacterDataContainer: Codable {
-//        let offset: Int // The requested offset (number of skipped results) of the call
-        let total: Int // The total number of resources available given the current filter set
-        let count: Int // The total number of results returned by this call
-        let characters: [CharacterInfo] // The list of characters returned by the call
+        let characters: [CharacterInfo]
         
         private enum CodingKeys: String, CodingKey {
-//            case offset
-            case total
-            case count
             case characters = "results"
         }
     }

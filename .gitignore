@@ -1,3 +1,7 @@
 Marvel/Assets.xcassets
-# Credential.swift
-Marvel/MarvelRequest/Credential.swift
+
+# API keys
+Credential.swift
+
+# Test files
+UITest.swift

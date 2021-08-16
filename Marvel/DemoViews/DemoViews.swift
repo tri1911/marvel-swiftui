@@ -22,13 +22,14 @@ extension Image {
 // MARK: - Standard View(s)
 
 struct StandardHeaderView: View {
+    var title: String
     var showSubtitle: Bool
     var showSeeAll: Bool
     
     var body: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading) {
-                Text("Title")
+                Text(title)
                     .font(.title3)
                     .fontWeight(.bold)
                 
@@ -48,50 +49,69 @@ struct StandardHeaderView: View {
     }
 }
 
-struct StandardSectionView<Content>: View where Content: View {
-    var itemsCount: Int = 6
-    var showSubtitle: Bool = false
-    var showSeeAll: Bool = true
+struct StandardSectionView<Item, ID, ItemView>: View where ID: Hashable, ItemView: View {
+    var items: [Item]
+    var id: KeyPath<Item, ID>
+    var title: String
+    var showsSubtitle: Bool
+    var showsSeeAll: Bool
+    var viewForItem: (Item) -> ItemView
+    
+    init(_ items: [Item], id: KeyPath<Item, ID>, title: String, showsSubtitle: Bool = false, showsSeeAll: Bool = true, viewForItem: @escaping (Item) -> ItemView) {
+        self.items = items
+        self.id = id
+        self.title = title
+        self.showsSubtitle = showsSubtitle
+        self.showsSeeAll = showsSeeAll
+        self.viewForItem = viewForItem
+    }
+    
+    var body: some View {
+        if items.isEmpty {
+            ProgressView().scaleEffect(1.5)
+        } else {
+            VStack(alignment: .leading) {
+                Divider().padding(.horizontal)
+                
+                StandardHeaderView(title: title, showSubtitle: showsSubtitle, showSeeAll: showsSeeAll).padding(.horizontal)
+                
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .top, spacing: 10) {
+                        ForEach(items, id: id) { item in
+                            viewForItem(item)
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+    }
+}
+
+extension StandardSectionView where Item: Identifiable, Item.ID == ID {
+    init(_ items: [Item], title: String, showsSubtitle: Bool = false, showsSeeAll: Bool = true, viewForItem: @escaping (Item) -> ItemView) {
+        self.init(items, id: \.id, title: title, showsSubtitle: showsSubtitle, showsSeeAll: showsSeeAll, viewForItem: viewForItem)
+    }
+}
+
+struct StandardGridView<Content>: View where Content: View {
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 2)
+    
+    var itemsCount = 10
     var content: () -> Content
     
     var body: some View {
-        VStack(alignment: .leading) {
-            Divider().padding(.horizontal)
-            
-            StandardHeaderView(showSubtitle: showSubtitle, showSeeAll: showSeeAll).padding(.horizontal)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 15) {
-                    ForEach(0..<itemsCount) { _ in
-                        content()
-                    }
-                }
-                .padding(.horizontal)
+        LazyVGrid(columns: columns, spacing: 10) {
+            ForEach(0..<itemsCount) { _ in
+                content()
             }
-            .buttonStyle(PlainButtonStyle())
         }
     }
 }
 
-// Standard Card View used for Section and in SeeAll Grid
+// HCard
 struct StandardCardView1: View {
-    var body: some View {
-        VStack(alignment: .leading) {
-            GeometryReader { geometry in
-                Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
-            }
-            Text("Chae Soo-bin")
-                .font(.footnote)
-            Text("Actress")
-                .font(.caption)
-                .foregroundColor(.gray)
-        }
-    }
-    
-}
-
-// Standard Card View used for Section and in SeeAll List
-struct StandardCardView2: View {
     private let defaultSize: CGFloat = 70
     
     var body: some View {
@@ -110,6 +130,150 @@ struct StandardCardView2: View {
             .padding(.trailing)
         }
         .frame(width: UIScreen.main.bounds.width * 0.9)
+    }
+}
+
+// HCard
+struct StandardCardView2: View {
+    var body: some View {
+        HStack(alignment: .top) {
+            Image.soobinThumbnail(width: 100, height: 100)
+            VStack(alignment: .leading) {
+                Text("July 9".uppercased())
+                    .foregroundColor(.gray)
+                    .font(.caption2)
+                Spacer()
+                Text("Swipe Right for The Climate (with Dr Ayana Elizabeth Johnson)")
+                    .font(.callout)
+                    .fontWeight(.bold)
+                    .lineLimit(/*@START_MENU_TOKEN@*/2/*@END_MENU_TOKEN@*/)
+                Spacer()
+                HStack {
+                    Image(systemName: "play.circle.fill")
+                    Text("23 min.")
+                        .font(.caption)
+                }
+                .foregroundColor(.purple)
+            }
+            Spacer()
+        }
+        .frame(width: UIScreen.main.bounds.width * 0.9, height: 110)
+    }
+}
+
+// MARK: - Card View Sample(s)
+
+// Large VCard which has the fixed width size of 250
+struct CardView1: View {
+    private let size: CGFloat = 250
+    
+    var type: String = "Recently Added"
+    var title: String = "Title"
+    var description: String = "Get hooked on a hearty helping of heroes and villains from the humble House of Ideas!"
+    var modified: String = "None"
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image.soobinThumbnail(width: size, height: size)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text((type).uppercased())
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.gray)
+                Text(title)
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .lineLimit(1)
+                Text(description.isEmpty ? "Default Description" : description)
+                    .font(.footnote)
+                    .foregroundColor(.gray)
+                    .lineLimit(1)
+                Text(modified)
+                    .font(.footnote)
+                    .foregroundColor(.purple)
+            }
+        }
+        .frame(width: size)
+    }
+}
+
+// Regular VCard which depends on the assigned width of the parent view
+struct CardView2: View {
+    var title: String?
+    var description: String?
+    
+    var body: some View {
+        VStack(alignment: .leading) {
+            GeometryReader { geometry in
+                Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
+            }
+            Text(title ?? "Chae Soo-bin")
+                .font(.footnote)
+                .lineLimit(1)
+            Text(description ?? "Actress")
+                .font(.caption)
+                .foregroundColor(.gray)
+                .lineLimit(1)
+        }
+        .aspectRatio(0.8, contentMode: .fit)
+    }
+    
+}
+
+struct CardView3: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 15) {
+            StandardCardView1()
+            Divider()
+            StandardCardView1()
+            Divider()
+            StandardCardView1()
+        }
+    }
+}
+
+struct CardView4: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            StandardCardView2()
+            Divider()
+            StandardCardView2()
+        }
+    }
+}
+
+// Simple thumbnail in Rectangle shape without any text
+struct CardView5: View {
+    var body: some View {
+        Image.soobinThumbnail(width: 200, height: 100)
+    }
+}
+
+// Bottom Banner (Shows Subtitle)
+struct CardView6: View {
+    var defaultSize: (CGFloat, CGFloat) {
+        let width = UIScreen.main.bounds.width * 0.6
+        let height = width * 1.3
+        return (width, height)
+    }
+    
+    var body: some View {
+        Image.soobinThumbnail(width: defaultSize.0, height: defaultSize.1)
+            .overlay(banner, alignment: .bottom)
+            .cornerRadius(10.0)
+    }
+    
+    var banner: some View {
+        ZStack {
+            Rectangle()
+                .frame(height: defaultSize.0 * 0.3)
+                .foregroundColor(.purple)
+            Text("One of a  kind podcasts featuring the funny and the fascinating.")
+                .font(.footnote)
+                .lineLimit(3)
+                .multilineTextAlignment(.center)
+                .foregroundColor(.white)
+                .padding(.horizontal)
+        }
     }
 }
 
@@ -141,134 +305,37 @@ struct SectionDemoView1: View {
     }
 }
 
-// Bottom Banner
+// SubCatogeries??
 struct SectionDemoView2: View {
-    var defaultSize: (CGFloat, CGFloat) {
-        let width = UIScreen.main.bounds.width * 0.6
-        let height = width * 1.3
-        return (width, height)
+    var items: [String]
+    var title: String
+    
+    init(_ items: [String], title: String) {
+        self.items = items
+        self.title = title
     }
     
     var body: some View {
-        StandardSectionView(showSubtitle: true) {
-            Image.soobinThumbnail(width: defaultSize.0, height: defaultSize.1)
-                .overlay(banner, alignment: .bottom)
-                .cornerRadius(10.0)
+        StandardSectionView(items, id: \.self, title: title, showsSeeAll: false) { item in
+            CategoryCardView(content: item)
         }
     }
     
-    var banner: some View {
-        ZStack {
-            Rectangle()
-                .frame(height: defaultSize.0 * 0.3)
-                .foregroundColor(.purple)
-            Text("One of a  kind podcasts featuring the funny and the fascinating.")
-                .font(.footnote)
-                .lineLimit(3)
-                .multilineTextAlignment(.center)
-                .foregroundColor(.white)
-                .padding(.horizontal)
-        }
-    }
-}
-
-// Large VCard
-struct SectionDemoView3: View {
-    private let size: CGFloat = 250
-    
-    var body: some View {
-        StandardSectionView {
-            VStack(alignment: .leading, spacing: 10) {
-                Image.soobinThumbnail(width: size, height: size)
-                
-                VStack(alignment: .leading, spacing: 5) {
-                    Text("Recently Added".uppercased())
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.gray)
-                    Text("Leading leaders who lead engineers")
-                        .font(.system(size: 18, weight: .semibold, design: .rounded))
-                        .lineLimit(3)
-                    Group {
-                        Text("Chae Soo-bin").foregroundColor(.gray)
-                        Text("Actress").foregroundColor(.purple)
-                    }
-                    .font(.footnote)
-                }
+    struct CategoryCardView: View {
+        let content: String
+        
+        var body: some View {
+            ZStack(alignment: .leading) {
+                RadialGradient(gradient: Gradient(colors: [.purple, .blue]), center: .topLeading, startRadius: 5, endRadius: 500)
+                Text(content)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: 130)
             }
-            .frame(width: size)
-        }
-    }
-}
-
-// Regular VCard
-struct SectionDemoView4: View {
-    var body: some View {
-        StandardSectionView {
-            StandardCardView1()
-                .aspectRatio(0.8, contentMode: .fit)
-                .frame(width: 165)
-        }
-    }
-}
-
-// 2 HCards
-struct SectionDemoView5: View {
-    var body: some View {
-        StandardSectionView {
-            VStack(alignment: .leading, spacing: 10) {
-                card
-                Divider()
-                card
-            }
-        }
-    }
-    
-    var card: some View {
-        HStack(alignment: .top) {
-            Image.soobinThumbnail(width: 100, height: 100)
-            VStack(alignment: .leading) {
-                Text("July 9".uppercased())
-                    .foregroundColor(.gray)
-                    .font(.caption2)
-                Spacer()
-                Text("Swipe Right for The Climate (with Dr Ayana Elizabeth Johnson)")
-                    .font(.callout)
-                    .fontWeight(.bold)
-                    .lineLimit(/*@START_MENU_TOKEN@*/2/*@END_MENU_TOKEN@*/)
-                Spacer()
-                HStack {
-                    Image(systemName: "play.circle.fill")
-                    Text("23 min.")
-                        .font(.caption)
-                }
-                .foregroundColor(.purple)
-            }
-            Spacer()
-        }
-        .frame(width: UIScreen.main.bounds.width * 0.9, height: 110)
-    }
-}
-
-// 3 HCards
-struct SectionDemoView6: View {
-    var body: some View {
-        StandardSectionView {
-            VStack(alignment: .leading, spacing: 15) {
-                StandardCardView2()
-                Divider()
-                StandardCardView2()
-                Divider()
-                StandardCardView2()
-            }
-        }
-    }
-}
-
-// Simple thumbnail in Rectangle shape without any text
-struct SectionDemoView7: View {
-    var body: some View {
-        StandardSectionView {
-            Image.soobinThumbnail(width: 200, height: 100)
+            .cornerRadius(5.0)
+            .aspectRatio(2.2, contentMode: .fit)
+            .frame(width: 220)
         }
     }
 }
@@ -279,8 +346,7 @@ struct SeeAllDemoView1: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             StandardGridView {
-                StandardCardView1()
-                    .aspectRatio(0.8, contentMode: .fit)
+                CardView2()
             }
             .padding(.horizontal)
         }
@@ -291,7 +357,7 @@ struct SeeAllDemoView2: View {
     var body: some View {
         List {
             ForEach(0..<10) { _ in
-                StandardCardView2().padding(.vertical)
+                CardView3().padding(.vertical)
             }
         }
         .padding(.trailing)
@@ -306,7 +372,7 @@ struct DefaultSearchResultView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Divider().padding(.horizontal)
                 
-                StandardHeaderView(showSubtitle: false, showSeeAll: false).padding(.horizontal)
+                StandardHeaderView(title: "Categories Browse", showSubtitle: false, showSeeAll: false).padding(.horizontal)
                 
                 StandardGridView {
                     GeometryReader { geometry in
@@ -328,49 +394,10 @@ struct DefaultSearchResultView: View {
     }
 }
 
-struct StandardGridView<Content>: View where Content: View {
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 2)
-    
-    var itemsCount = 10
-    var content: () -> Content
-    
-    var body: some View {
-        LazyVGrid(columns: columns, spacing: 10) {
-            ForEach(0..<itemsCount) { _ in
-                content()
-            }
-        }
-    }
-}
-
 struct SectionDemoView_Previews: PreviewProvider {
     static var previews: some View {
-//        SectionDemoView1()
-//            .padding(.vertical)
-//            .previewLayout(.sizeThatFits)
-//        SectionDemoView2()
-//            .padding(.vertical)
-//            .previewLayout(.sizeThatFits)
-//        SectionDemoView3()
-//            .padding(.vertical)
-//            .previewLayout(.sizeThatFits)
-//        SectionDemoView4()
-//            .padding(.vertical)
-//            .previewLayout(.sizeThatFits)
-//        SectionDemoView5()
-//            .padding(.vertical)
-//            .previewLayout(.sizeThatFits)
-//        SectionDemoView6()
-//            .padding(.vertical)
-//            .previewLayout(.sizeThatFits)
-//        SectionDemoView7()
-//            .padding(.vertical)
-//            .previewLayout(.sizeThatFits)
-        SeeAllDemoView1()
+        SectionDemoView2(Category.allCases.map { $0.rawValue.capitalized }, title: "Categories")
             .padding(.vertical)
             .previewLayout(.sizeThatFits)
-//        DefaultSearchResultView()
-//            .padding(.vertical)
-//            .previewLayout(.sizeThatFits)
     }
 }
