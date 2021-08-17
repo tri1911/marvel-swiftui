@@ -6,49 +6,42 @@
 //
 
 import Foundation
-import Combine
 
 struct CharacterInfo: Codable, Hashable, Identifiable {
     let id: Int // The unique ID of the character resource
     let name: String // The name of the character
     let description: String // A short bio or description of the character
     let modified: String // The date the resource was most recently modified
-    let urls: [CharacterURL] // A set of public web site URLs for the resource
-    let thumbnail: CharacterImage // The representative image for this character
+    let urls: [MarvelURL] // A set of public web site URLs for the resource
+    let thumbnail: MarvelImage // The representative image for this character
     
-    var modifiedDate: String {
+    // MARK: - Syntactic Sugar
+    
+    var description_: String { description.isEmpty ? "Default Description for Character" : description }
+    
+    var modified_: String {
         let date = ISO8601DateFormatter().date(from: modified) ?? Date()
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MM-dd-yyyy"
         return dateFormatter.string(from: date)
     }
-
-    struct CharacterURL: Codable, Hashable {
-        let type: String // A text identifier for the URL
-        let urlString: String // A full URL (including scheme, domain, and path)
-        
-        var url: URL? { URL(string: "https\(urlString.dropFirst(4))") }
-    
-        private enum CodingKeys: String, CodingKey {
-            case type
-            case urlString = "url"
-        }
-    }
-    
-    struct CharacterImage: Codable {
-        let path: String // The directory path of to the image
-        let ext: String // The file extension for the image
-        
-        var url: URL? { URL(string: "https\(path.dropFirst(4)).\(ext)") }
-        
-        private enum CodingKeys: String, CodingKey {
-            case path
-            case ext = "extension"
-        }
-    }
     
     static func == (lhs: CharacterInfo, rhs: CharacterInfo) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
+}
+
+struct MarvelURL: Codable, Hashable {
+    let type: String // A text identifier for the URL
+    let url: String // A full URL (including scheme, domain, and path)
+    
+    var url_: URL? { URL(string: "https\(url.dropFirst(4))") }
+}
+
+struct MarvelImage: Codable {
+    let path: String // The directory path of to the image
+    let `extension`: String // The file extension for the image
+    
+    var url: URL? { URL(string: "https\(path.dropFirst(4)).\(`extension`)") }
 }
 
 struct CharacterFilter: Hashable {
@@ -59,18 +52,19 @@ struct CharacterFilter: Hashable {
     var orderBy: String?
 }
 
-class CharacterRequest: MarvelRequest<CharacterInfo>, Codable {
+// TODO: share code with other InfoRequest
+
+class CharacterInfoRequest: MarvelRequest<CharacterInfo>, Codable {
     
-    static var requests = [CharacterFilter:CharacterRequest]()
+    static var requests = [CharacterFilter:CharacterInfoRequest]()
     
-    static func create(_ filter: CharacterFilter, limit: Int?) -> (CharacterRequest, Bool) {
-        let request = requests[filter]
-        if request == nil {
-            let request = CharacterRequest(filter, limit: limit)
+    static func create(_ filter: CharacterFilter, limit: Int?) -> (CharacterInfoRequest, Bool) {
+        if let request = requests[filter] {
+            return (request, false)
+        } else {
+            let request = CharacterInfoRequest(filter, limit: limit)
             requests[filter] = request
             return (request, true)
-        } else {
-            return (request!, false)
         }
     }
     
@@ -78,7 +72,7 @@ class CharacterRequest: MarvelRequest<CharacterInfo>, Codable {
     
     private(set) var filter: CharacterFilter?
     
-    // MARK: - Initilization
+    // MARK: - Initialization
     
     private init(_ filter: CharacterFilter, limit: Int?) {
         print("Creating the new Character Request...")
@@ -95,8 +89,8 @@ class CharacterRequest: MarvelRequest<CharacterInfo>, Codable {
         var request = "characters?"
         request.addMarvelArgument("name", filter?.name)
         request.addMarvelArgument("nameStartsWith", filter?.nameStartsWith)
-        request.addMarvelArgument("comics", filter?.comicId)
         request.addMarvelArgument("modifiedSince", filter?.modifiedSince)
+        request.addMarvelArgument("comics", filter?.comicId)
         request.addMarvelArgument("orderBy", filter?.orderBy)
         request.addMarvelArgument("limit", max(1, min(limit, 100)))
         request.addMarvelArgument("offset", offset)
@@ -104,7 +98,7 @@ class CharacterRequest: MarvelRequest<CharacterInfo>, Codable {
     }
     
     override func decode(_ json: Data) -> Array<CharacterInfo> {
-        let result = (try? JSONDecoder().decode(CharacterRequest.self, from: json))?.marvelResultData
+        let result = (try? JSONDecoder().decode(CharacterInfoRequest.self, from: json))?.marvelResultData
         return result?.characters ?? []
     }
     
@@ -124,6 +118,3 @@ class CharacterRequest: MarvelRequest<CharacterInfo>, Codable {
         }
     }
 }
-
-
-

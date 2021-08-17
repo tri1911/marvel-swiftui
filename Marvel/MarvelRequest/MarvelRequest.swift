@@ -40,10 +40,13 @@ class MarvelRequest<Fetched> where Fetched: Codable {
                     .replaceError(with: [])
                     .receive(on: DispatchQueue.main)
                     .sink { [weak self] results in
-                        if results.isEmpty { print("returned empty set"); return }
-                        if useCache { self?.cache(results) }
-                        self?.results.send(results)
-                        print("successful fetching")
+                        self?.results.send(results) // Possibly return an empty result
+                        if results.isEmpty {
+                            print("returned empty set")
+                        } else if useCache {
+                            self?.cache(results)
+                            print("successful fetching")
+                        }
                     }
             } else {
                 print("invalid url!")
@@ -55,7 +58,7 @@ class MarvelRequest<Fetched> where Fetched: Codable {
     
     // MARK: - Caching
     
-    var cacheKey: String? { nil } // Overrided by children
+    var cacheKey: String? { nil } // Need to be overrided
     private var cachedData: Data? { cacheKey != nil ? UserDefaults.standard.data(forKey: cacheKey!) : nil }
     
     private func cache(_ newResults: Array<Fetched>) {
@@ -89,13 +92,13 @@ extension String {
         }
     }
     
-//    mutating func addMarvelArgument(_ name: String, _ value: Date?) {
-//        if value != nil {
-//            let dateFormatter = DateFormatter()
-//            dateFormatter.dateFormat = "MM-dd-yyyy"
-//            addMarvelArgument(name, dateFormatter.string(from: value!))
-//        }
-//    }
+    mutating func addMarvelArgument(_ name: String, _ value: Date?) {
+        if value != nil {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "MM-dd-yyyy"
+            addMarvelArgument(name, dateFormatter.string(from: value!))
+        }
+    }
     
     mutating func addMarvelArgument(_ name: String, _ value: String? = nil) {
         if value != nil {

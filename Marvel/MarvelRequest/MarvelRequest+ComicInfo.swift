@@ -15,39 +15,19 @@ struct ComicInfo: Codable, Hashable, Identifiable {
     let isbn: String // The ISBN for the comic (generally only populated for collection formats)
     let format: String // The publication format of the comic e.g. comic, hardcover, trade paperback
     let pageCount: Int // The number of story pages in the comic
-    let urls: [ComicURL] // A set of public web site URLs for the resource
-    let thumbnail: ComicImage // The representative image for this comic
-    let images: [ComicImage] // A list of promotional images associated with this comic
+    let urls: [MarvelURL] // A set of public web site URLs for the resource
+    let thumbnail: MarvelImage // The representative image for this comic
+    let images: [MarvelImage] // A list of promotional images associated with this comic
     
-    var modifiedDate: String {
+    // MARK: - Syntatic Sugar
+    
+    var description_: String { description != nil ? description! : "Default Description for Comic" }
+    
+    var modified_: String {
         let date = ISO8601DateFormatter().date(from: modified) ?? Date()
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MM-dd-yyyy"
         return dateFormatter.string(from: date)
-    }
-    
-    struct ComicURL: Codable {
-        let type: String // A text identifier for the URL
-        let urlString: String // A full URL (including scheme, domain, and path)
-        
-        var url: URL? { URL(string: "https\(urlString.dropFirst(4))") }
-        
-        private enum CodingKeys: String, CodingKey {
-            case type
-            case urlString = "url"
-        }
-    }
-    
-    struct ComicImage: Codable, Hashable {
-        let path: String // (string, optional): The directory path of to the image.,
-        let ext: String // (string, optional): The file extension for the image.
-        
-        var url: URL? { URL(string: "https\(path.dropFirst(4)).\(ext)") }
-        
-        private enum CodingKeys: String, CodingKey {
-            case path
-            case ext = "extension"
-        }
     }
     
     static func == (lhs: ComicInfo, rhs: ComicInfo) -> Bool { lhs.id == rhs.id }
@@ -67,18 +47,19 @@ struct ComicFilter: Hashable {
     var orderBy: String?
 }
 
-class ComicRequest: MarvelRequest<ComicInfo>, Codable {
+// TODO: share code with other InfoRequest
+
+class ComicInfoRequest: MarvelRequest<ComicInfo>, Codable {
     
-    static var requests = [ComicFilter:ComicRequest]()
+    static var requests = [ComicFilter:ComicInfoRequest]()
     
-    static func create(_ filter: ComicFilter, limit: Int?) -> ComicRequest {
-        let request = requests[filter]
-        if request == nil {
-            let request = ComicRequest(filter, limit: limit)
-            requests[filter] = request
-            return request
+    static func create(_ filter: ComicFilter, limit: Int?) -> (ComicInfoRequest, Bool) {
+        if let request = requests[filter] {
+            return (request, false)
         } else {
-            return request!
+            let request = ComicInfoRequest(filter, limit: limit)
+            requests[filter] = request
+            return (request, true)
         }
     }
     
@@ -108,17 +89,16 @@ class ComicRequest: MarvelRequest<ComicInfo>, Codable {
         request.addMarvelArgument("titleStartsWith", filter?.titleStartsWith)
         request.addMarvelArgument("startYear", filter?.startYear)
         request.addMarvelArgument("isbn", filter?.isbn)
-        request.addMarvelArgument("characterId", filter?.characterId)
+        request.addMarvelArgument("characters", filter?.characterId)
         request.addMarvelArgument("modifiedSince", filter?.modifiedSince)
         request.addMarvelArgument("orderBy", filter?.orderBy)
-
         request.addMarvelArgument("limit", max(1, min(limit, 100)))
         request.addMarvelArgument("offset", offset)
         return request
     }
     
     override func decode(_ json: Data) -> [ComicInfo] {
-        let result = (try? JSONDecoder().decode(ComicRequest.self, from: json))?.marvelResultData
+        let result = (try? JSONDecoder().decode(ComicInfoRequest.self, from: json))?.marvelResultData
         return result?.comics ?? []
     }
     
