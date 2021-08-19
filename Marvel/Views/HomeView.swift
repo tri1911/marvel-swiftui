@@ -15,13 +15,21 @@ struct HomeView: View {
     
     // MARK: - Filter Set(s)
     
-    private let characterFilterSet = CharacterFilter(orderBy: "-modified")
-    private let comicFilterSet = ComicFilter(orderBy: "-modified")
+    private let characterFilter = CharacterFilter(orderBy: "-modified")
+    private let comicFilter = ComicFilter(orderBy: "-modified")
+    private let creatorFilter = CreatorFilter(orderBy: "-modified")
+    private let eventFilter = EventFilter(orderBy: "-modified")
+    private let seriesFilter = SeriesFilter(orderBy: "-modified")
+    private let storyFilter = StoryFilter(orderBy: "-modified")
     
     // MARK: - Fetched Results
     
-    var characters: [CharacterInfo]? { store.characters[characterFilterSet] }
-    var comics: [ComicInfo]? { store.comics[comicFilterSet] }
+    private var characters: [CharacterInfo]? { store.characters[characterFilter] }
+    private var comics: [ComicInfo]? { store.comics[comicFilter] }
+    private var creators: [CreatorInfo]? { store.creators[creatorFilter] }
+    private var events: [EventInfo]? { store.events[eventFilter] }
+    private var series: [SeriesInfo]? { store.series[seriesFilter] }
+    private var stories: [StoryInfo]? { store.stories[storyFilter] }
     
     var body: some View {
         NavigationView {
@@ -40,7 +48,7 @@ struct HomeView: View {
                         }
                     }
                     
-                    //  New Comics
+                    //  Comics
                     StandardSectionView(comics, title: "Newest Comics", destination: SeeAllDemoView2(comics ?? [], titleKey: \.title, descriptionKey: \.description_)) { comic in
                         NavigationLink(destination: ComicDetailsView(comic)) {
                             CardView2(title: comic.title, description: comic.description_)
@@ -48,22 +56,68 @@ struct HomeView: View {
                         }
                     }
                     
-                    //  Featured Events
+                    // Events
+                    StandardSectionView(divides(events, groupOf: 3), id: \.self, title: "Incoming Events", destination: Text("All Events")) { events in
+//                        CardView3(items: events, titleKey: \.title, descriptionKey: \.description)
+                        VStack(alignment: .leading, spacing: 15) {
+                            ForEach(events) { event in
+                                NavigationLink(destination: EventDetailsView(event)) {
+                                    StandardCardView1(title: event.title, description: event.description)                                    
+                                }
+                                if let index = events.firstIndex { $0.id == event.id }, index != events.count - 1 {
+                                    Divider()
+                                }
+                            }
+                        }
+                    }
                     
-                    //  Featured Series
+                    // Series
+                    StandardSectionView(divides(series, groupOf: 2), id: \.self, title: "New Release Series", destination: Text("All Series")) { series in
+//                        CardView4(items: series, titleKey: \.title, modifiedKey: \.modified, startYearKey: \.startYear, ratingKey: \.rating)
+                        VStack(alignment: .leading, spacing: 10) {
+                            ForEach(series) { item in
+                                NavigationLink(destination: SeriesDetailsView(item)) {
+                                    StandardCardView2(modified: item.modified, title: item.title, startYear: item.startYear, rating: item.rating )
+                                }
+                                if let index = series.firstIndex { $0.id == item.id }, index != series.count - 1 {
+                                    Divider()
+                                }
+                            }
+                        }
+                    }
                     
-                    //  Featured Stories
-                    
-                    //  Featured Creators
-                    
+                    // Stories
+                    StandardSectionView(stories, title: "Newest Stories", showsSeeAll: false, destination: Text("All Stories")) { story in
+                        CardView6(title: story.title)
+                    }
+
+                    // Creators
+                    StandardSectionView(creators, title: "Popular Creators", destination: Text("All Creators")) { creator in
+                        NavigationLink(destination: CreatorDetailsView(creator)) {
+                            CardView7(name: creator.fullName)
+                        }
+                    }
                 }
             }
             .navigationTitle("Marvel")
             .onAppear {
-                store.fetch(characterFilterSet)
-                store.fetch(comicFilterSet)
+                store.fetch(characterFilter)
+                store.fetch(comicFilter)
+                store.fetch(creatorFilter)
+                store.fetch(eventFilter)
+                store.fetch(seriesFilter)
+                store.fetch(storyFilter)
             }
         }
+    }
+    
+    private func divides<Item>(_ items: [Item]?, groupOf count: Int) -> [[Item]]? {
+        if items != nil {
+            return Dictionary(grouping: items!.enumerated()) { $0.offset / count } // Divides elements into groups of three
+                .sorted { $0.key < $1.key } // Sorted by keys
+                .map { $0.value.map { $0.element } } // Extract groups of desired elements
+        }
+        return nil
     }
 }
 

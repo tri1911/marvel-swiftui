@@ -19,7 +19,7 @@ struct ComicInfo: Codable, Hashable, Identifiable {
     let thumbnail: MarvelImage // The representative image for this comic
     let images: [MarvelImage] // A list of promotional images associated with this comic
     
-    // MARK: - Syntatic Sugar
+    // MARK: - Syntactic Sugar
     
     var description_: String { description != nil ? description! : "Default Description for Comic" }
     
@@ -42,8 +42,12 @@ struct ComicFilter: Hashable {
     var titleStartsWith: String?
     var startYear: Int?
     var isbn: String?
-    var characterId: Int?
     var modifiedSince: String?
+    var creatorId: Int?
+    var characterId: Int?
+    var seriesId: Int?
+    var eventId: Int?
+    var storyId: Int?
     var orderBy: String?
 }
 
@@ -89,8 +93,12 @@ class ComicInfoRequest: MarvelRequest<ComicInfo>, Codable {
         request.addMarvelArgument("titleStartsWith", filter?.titleStartsWith)
         request.addMarvelArgument("startYear", filter?.startYear)
         request.addMarvelArgument("isbn", filter?.isbn)
-        request.addMarvelArgument("characters", filter?.characterId)
         request.addMarvelArgument("modifiedSince", filter?.modifiedSince)
+        request.addMarvelArgument("creators", filter?.creatorId)
+        request.addMarvelArgument("characters", filter?.characterId)
+        request.addMarvelArgument("series", filter?.seriesId)
+        request.addMarvelArgument("events", filter?.eventId)
+        request.addMarvelArgument("stories", filter?.storyId)
         request.addMarvelArgument("orderBy", filter?.orderBy)
         request.addMarvelArgument("limit", max(1, min(limit, 100)))
         request.addMarvelArgument("offset", offset)

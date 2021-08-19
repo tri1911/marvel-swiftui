@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct CreatorInfo: Codable, Identifiable {
+struct CreatorInfo: Codable, Identifiable, Hashable {
     let id: Int // The unique ID of the creator resource
     let firstName: String // The first name of the creator
     let middleName: String // The middle name of the creator
@@ -26,6 +26,9 @@ struct CreatorInfo: Codable, Identifiable {
         dateFormatter.dateFormat = "MM-dd-yyyy"
         return dateFormatter.string(from: date)
     }
+    
+    static func == (lhs: CreatorInfo, rhs: CreatorInfo) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
 struct CreatorFilter: Hashable {

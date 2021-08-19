@@ -47,8 +47,11 @@ struct MarvelImage: Codable {
 struct CharacterFilter: Hashable {
     var name: String?
     var nameStartsWith: String?
-    var comicId: Int?
     var modifiedSince: String?
+    var comicId: Int?
+    var seriesId: Int?
+    var eventId: Int?
+    var storyId: Int?
     var orderBy: String?
 }
 
@@ -91,6 +94,9 @@ class CharacterInfoRequest: MarvelRequest<CharacterInfo>, Codable {
         request.addMarvelArgument("nameStartsWith", filter?.nameStartsWith)
         request.addMarvelArgument("modifiedSince", filter?.modifiedSince)
         request.addMarvelArgument("comics", filter?.comicId)
+        request.addMarvelArgument("series", filter?.seriesId)
+        request.addMarvelArgument("events", filter?.eventId)
+        request.addMarvelArgument("stories", filter?.storyId)
         request.addMarvelArgument("orderBy", filter?.orderBy)
         request.addMarvelArgument("limit", max(1, min(limit, 100)))
         request.addMarvelArgument("offset", offset)

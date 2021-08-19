@@ -7,18 +7,17 @@
 
 import Foundation
 
-struct EventInfo: Codable, Identifiable {
+struct EventInfo: Codable, Identifiable, Hashable {
     let id: Int // The unique ID of the event resource
     let title: String // The title of the event
     let description: String // A description of the event
-    let resourceURI: String // The canonical URL identifier for this resource
     let urls: [MarvelURL] // A set of public web site URLs for the event
     let modified: String // The date the resource was most recently modified
-    let start: String // The date of publication of the first issue in this event
-    let end: String // The date of publication of the last issue in this event
+    let start: String? // The date of publication of the first issue in this event
+    let end: String? // The date of publication of the last issue in this event
     let thumbnail: MarvelImage // The representative image for this event
-    let next: EventSummary // A summary representation of the event which follows this event
-    let previous: EventSummary // A summary representation of the event which preceded this event
+    let next: EventSummary? // A summary representation of the event which follows this event
+    let previous: EventSummary? // A summary representation of the event which preceded this event
     
     // MARK: - Syntactic Sugar
     
@@ -37,6 +36,9 @@ struct EventInfo: Codable, Identifiable {
         
         var url: URL? { URL(string: "https\(resourceURI.dropFirst(4))") }
     }
+    
+    static func == (lhs: EventInfo, rhs: EventInfo) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
 struct EventFilter: Hashable {

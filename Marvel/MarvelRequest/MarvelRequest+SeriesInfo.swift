@@ -7,22 +7,22 @@
 
 import Foundation
 
-struct SeriesInfo: Codable, Identifiable {
+struct SeriesInfo: Codable, Identifiable, Hashable {
     let id: Int // The unique ID of the series resource
     let title: String // The canonical title of the series
-    let description: String // A description of the series
+    let description: String? // A description of the series
     let urls: [MarvelURL] // Array[Url], optional): A set of public web site URLs for the resource
     let startYear: Int // The first year of publication for the series
     let endYear: Int // The last year of publication for the series (conventionally, 2099 for ongoing series)
     let rating: String // The age-appropriateness rating for the series
     let modified: String // The date the resource was most recently modified
     let thumbnail: MarvelImage // The representative image for this series
-    let next: SeriesSummary // A summary representation of the series which follows this series
-    let previous: SeriesSummary // A summary representation of the series which preceded this series
+    let next: SeriesSummary? // A summary representation of the series which follows this series
+    let previous: SeriesSummary? // A summary representation of the series which preceded this series
     
     // MARK: - Syntactic Sugar
     
-    var description_: String { description.isEmpty ? "Default Description for Series" : description }
+    var description_: String { description == nil ? "Default Description for Series" : description! }
     
     var modified_: String {
         let date = ISO8601DateFormatter().date(from: modified) ?? Date()
@@ -37,6 +37,9 @@ struct SeriesInfo: Codable, Identifiable {
         
         var url: URL? { URL(string: "https\(resourceURI.dropFirst(4))") }
     }
+    
+    static func == (lhs: SeriesInfo, rhs: SeriesInfo) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
 struct SeriesFilter: Hashable {
