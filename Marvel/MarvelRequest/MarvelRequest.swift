@@ -8,11 +8,11 @@
 import Foundation
 import Combine
 
-class MarvelRequest<Fetched> where Fetched: Codable {
+class MarvelRequest<Info> where Info: Codable {
     
     // MARK: - Fetched results
     
-    private (set) var results = PassthroughSubject<Array<Fetched>, Never>()
+    private (set) var results = CurrentValueSubject<Array<Info>, Never>([])
     
     // MARK: - Shared Request Parameter(s)
     
@@ -22,7 +22,7 @@ class MarvelRequest<Fetched> where Fetched: Codable {
     // MARK: - Subclasser override(s)
     
     var query: String { "" }
-    func decode(_ json: Data) -> Array<Fetched> { [] }
+    func decode(_ json: Data) -> Array<Info> { [] }
     
     // MARK: - Private Data
     
@@ -58,10 +58,10 @@ class MarvelRequest<Fetched> where Fetched: Codable {
     
     // MARK: - Caching
     
-    var cacheKey: String? { nil } // Need to be overrided
+    var cacheKey: String? { "\(type(of: self)).\(query)" }
     private var cachedData: Data? { cacheKey != nil ? UserDefaults.standard.data(forKey: cacheKey!) : nil }
     
-    private func cache(_ newResults: Array<Fetched>) {
+    private func cache(_ newResults: Array<Info>) {
         if let key = cacheKey, let data = try? JSONEncoder().encode(newResults) {
             print("caching data for key \(key)")
             UserDefaults.standard.set(data, forKey: key)
@@ -71,7 +71,7 @@ class MarvelRequest<Fetched> where Fetched: Codable {
     private func fetchFromCache() -> Bool {
         if let key = cacheKey, let data = cachedData {
             print("Fetching cached data (key: \(key))")
-            if let decodedData = try? JSONDecoder().decode(Array<Fetched>.self, from: data) {
+            if let decodedData = try? JSONDecoder().decode(Array<Info>.self, from: data) {
                 results.send(decodedData)
                 print("successfully fetching from cache")
                 return true

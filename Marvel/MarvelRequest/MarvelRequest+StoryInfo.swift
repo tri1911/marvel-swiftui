@@ -50,17 +50,18 @@ struct StoryFilter: Hashable {
 
 // TODO: share code with other InfoRequest
 
-class StoryInfoRequest: MarvelRequest<StoryInfo>, Codable {
+final class StoryInfoRequest: MarvelRequest<StoryInfo>, Codable, InfoRequest {
     
     static var requests = [StoryFilter:StoryInfoRequest]()
     
-    static func create(_ filter: StoryFilter, limit: Int?) -> (StoryInfoRequest, Bool) {
+    static func create(_ filter: StoryFilter, limit: Int?) -> StoryInfoRequest {
         if let request = requests[filter] {
-            return (request, false)
+            return request
         } else {
             let request = StoryInfoRequest(filter, limit: limit)
+            request.fetch(useCache: false)
             requests[filter] = request
-            return (request, true)
+            return request
         }
     }
     

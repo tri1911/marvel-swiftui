@@ -57,17 +57,18 @@ struct CharacterFilter: Hashable {
 
 // TODO: share code with other InfoRequest
 
-class CharacterInfoRequest: MarvelRequest<CharacterInfo>, Codable {
+final class CharacterInfoRequest: MarvelRequest<CharacterInfo>, Codable, InfoRequest {
     
     static var requests = [CharacterFilter:CharacterInfoRequest]()
     
-    static func create(_ filter: CharacterFilter, limit: Int?) -> (CharacterInfoRequest, Bool) {
+    static func create(_ filter: CharacterFilter, limit: Int?) -> CharacterInfoRequest {
         if let request = requests[filter] {
-            return (request, false)
+            return request
         } else {
             let request = CharacterInfoRequest(filter, limit: limit)
+            request.fetch(useCache: false)
             requests[filter] = request
-            return (request, true)
+            return request
         }
     }
     

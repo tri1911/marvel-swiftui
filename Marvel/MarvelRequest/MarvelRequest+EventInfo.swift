@@ -55,17 +55,18 @@ struct EventFilter: Hashable {
 
 // TODO: share code with other InfoRequest
 
-class EventInfoRequest: MarvelRequest<EventInfo>, Codable {
+final class EventInfoRequest: MarvelRequest<EventInfo>, Codable, InfoRequest {
     
     static var requests = [EventFilter:EventInfoRequest]()
     
-    static func create(_ filter: EventFilter, limit: Int?) -> (EventInfoRequest, Bool) {
+    static func create(_ filter: EventFilter, limit: Int?) -> EventInfoRequest {
         if let request = requests[filter] {
-            return (request, false)
+            return request
         } else {
             let request = EventInfoRequest(filter, limit: limit)
+            request.fetch(useCache: false)
             requests[filter] = request
-            return (request, true)
+            return request
         }
     }
     

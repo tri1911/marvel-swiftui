@@ -50,17 +50,18 @@ struct CreatorFilter: Hashable {
 
 // TODO: share code with other InfoRequest
 
-class CreatorInfoRequest: MarvelRequest<CreatorInfo>, Codable {
+final class CreatorInfoRequest: MarvelRequest<CreatorInfo>, Codable, InfoRequest {
     
     static var requests = [CreatorFilter:CreatorInfoRequest]()
     
-    static func create(_ filter: CreatorFilter, limit: Int?) -> (CreatorInfoRequest, Bool) {
+    static func create(_ filter: CreatorFilter, limit: Int?) -> CreatorInfoRequest {
         if let request = requests[filter] {
-            return (request, false)
+            return request
         } else {
             let request = CreatorInfoRequest(filter, limit: limit)
+            request.fetch(useCache: false)
             requests[filter] = request
-            return (request, true)
+            return request
         }
     }
     

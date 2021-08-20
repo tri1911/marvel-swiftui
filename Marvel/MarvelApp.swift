@@ -9,12 +9,9 @@ import SwiftUI
 
 @main
 struct MarvelApp: App {
-    @StateObject private var store = MarvelStore()
-    
     var body: some Scene {
         WindowGroup {
             HomeView()
-                .environmentObject(store)
         }
     }
 }

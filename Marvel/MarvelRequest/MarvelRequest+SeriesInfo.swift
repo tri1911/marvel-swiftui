@@ -59,17 +59,18 @@ struct SeriesFilter: Hashable {
 
 // TODO: share code with other InfoRequest
 
-class SeriesInfoRequest: MarvelRequest<SeriesInfo>, Codable {
+final class SeriesInfoRequest: MarvelRequest<SeriesInfo>, Codable, InfoRequest {
     
     static var requests = [SeriesFilter:SeriesInfoRequest]()
     
-    static func create(_ filter: SeriesFilter, limit: Int?) -> (SeriesInfoRequest, Bool) {
+    static func create(_ filter: SeriesFilter, limit: Int?) -> SeriesInfoRequest {
         if let request = requests[filter] {
-            return (request, false)
+            return request
         } else {
             let request = SeriesInfoRequest(filter, limit: limit)
+            request.fetch(useCache: false)
             requests[filter] = request
-            return (request, true)
+            return request
         }
     }
     
