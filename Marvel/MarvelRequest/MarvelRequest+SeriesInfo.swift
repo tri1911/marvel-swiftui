@@ -57,40 +57,10 @@ struct SeriesFilter: Hashable {
     var orderBy: String?
 }
 
-// TODO: share code with other InfoRequest
-
-final class SeriesInfoRequest: MarvelRequest<SeriesInfo>, Codable, InfoRequest {
+final class SeriesInfoRequest: MarvelRequest<SeriesFilter, SeriesInfo>, InfoRequest {
     
     static var requests = [SeriesFilter:SeriesInfoRequest]()
-    
-    static func create(_ filter: SeriesFilter, limit: Int?) -> SeriesInfoRequest {
-        if let request = requests[filter] {
-            return request
-        } else {
-            let request = SeriesInfoRequest(filter, limit: limit)
-            request.fetch(useCache: false)
-            requests[filter] = request
-            return request
-        }
-    }
-    
-    // MARK: - Request Parameter(s)
-    
-    private(set) var filter: SeriesFilter?
-    
-    // MARK: - Initialization
-    
-    private init(_ filter: SeriesFilter, limit: Int?) {
-        print("Creating the new Character Request...")
-        super.init()
-        self.filter = filter
-        if limit != nil { self.limit = limit! }
-    }
-    
-    // MARK: - Overrides
-    
-    override var cacheKey: String? { "\(type(of: self)).\(query)" }
-    
+
     override var query: String {
         var request = "series?"
         request.addMarvelArgument("title", filter?.title)
@@ -108,27 +78,6 @@ final class SeriesInfoRequest: MarvelRequest<SeriesInfo>, Codable, InfoRequest {
         request.addMarvelArgument("limit", max(1, min(limit, 100)))
         request.addMarvelArgument("offset", offset)
         return request
-    }
-    
-    override func decode(_ json: Data) -> Array<SeriesInfo> {
-        let result = (try? JSONDecoder().decode(SeriesInfoRequest.self, from: json))?.marvelResultData
-        return result?.series ?? []
-    }
-    
-    // MARK: - Decoding Data Structure
-    
-    private var marvelResultData: SeriesDataContainer?
-    
-    private enum CodingKeys: String, CodingKey {
-        case marvelResultData = "data"
-    }
-    
-    struct SeriesDataContainer: Codable {
-        let series: [SeriesInfo]
-        
-        private enum CodingKeys: String, CodingKey {
-            case series = "results"
-        }
     }
 }
 

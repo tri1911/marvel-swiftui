@@ -48,40 +48,10 @@ struct StoryFilter: Hashable {
     var orderBy: String?
 }
 
-// TODO: share code with other InfoRequest
-
-final class StoryInfoRequest: MarvelRequest<StoryInfo>, Codable, InfoRequest {
+final class StoryInfoRequest: MarvelRequest<StoryFilter, StoryInfo>, InfoRequest {
     
     static var requests = [StoryFilter:StoryInfoRequest]()
-    
-    static func create(_ filter: StoryFilter, limit: Int?) -> StoryInfoRequest {
-        if let request = requests[filter] {
-            return request
-        } else {
-            let request = StoryInfoRequest(filter, limit: limit)
-            request.fetch(useCache: false)
-            requests[filter] = request
-            return request
-        }
-    }
-    
-    // MARK: - Request Parameter(s)
-    
-    private(set) var filter: StoryFilter?
-    
-    // MARK: - Initialization
-    
-    private init(_ filter: StoryFilter, limit: Int?) {
-        print("Creating the new Story Request...")
-        super.init()
-        self.filter = filter
-        if limit != nil { self.limit = limit! }
-    }
-    
-    // MARK: - Overrides
-    
-    override var cacheKey: String? { "\(type(of: self)).\(query)" }
-    
+
     override var query: String {
         var request = "stories?"
         request.addMarvelArgument("modifiedSince", filter?.modifiedSince)
@@ -94,26 +64,5 @@ final class StoryInfoRequest: MarvelRequest<StoryInfo>, Codable, InfoRequest {
         request.addMarvelArgument("limit", max(1, min(limit, 100)))
         request.addMarvelArgument("offset", offset)
         return request
-    }
-    
-    override func decode(_ json: Data) -> Array<StoryInfo> {
-        let result = (try? JSONDecoder().decode(StoryInfoRequest.self, from: json))?.marvelResultData
-        return result?.stories ?? []
-    }
-    
-    // MARK: - Decoding Data Structure
-    
-    private var marvelResultData: StoryDataContainer?
-    
-    private enum CodingKeys: String, CodingKey {
-        case marvelResultData = "data"
-    }
-    
-    struct StoryDataContainer: Codable {
-        let stories: [StoryInfo]
-        
-        private enum CodingKeys: String, CodingKey {
-            case stories = "results"
-        }
     }
 }

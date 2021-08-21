@@ -9,10 +9,27 @@ import SwiftUI
 import Combine
 
 protocol InfoRequest {
-    associatedtype Filter
+    associatedtype Filter: Hashable
     associatedtype Info: Identifiable, Hashable
-    var results: CurrentValueSubject<[Info], Never> { get }
+    
+    static var requests: [Filter:Self] { get set }
     static func create(_ filter: Filter, limit: Int?) -> Self
+    var results: CurrentValueSubject<[Info], Never> { get }
+    init(_ filter: Filter, limit: Int?)
+    func fetch(useCache: Bool)
+}
+
+extension InfoRequest {
+    static func create(_ filter: Filter, limit: Int?) -> Self {
+        if let request = requests[filter] {
+            return request
+        } else {
+            let request = Self(filter, limit: limit)
+            request.fetch(useCache: true)
+            requests[filter] = request
+            return request
+        }
+    }
 }
 
 struct MarvelSectionView<Request>: View where Request: InfoRequest {
@@ -39,7 +56,6 @@ struct MarvelSectionView<Request>: View where Request: InfoRequest {
 
         self.filter = filter
         self.request = Request.create(filter, limit: nil)
-        _infos = .init(initialValue: [])
 
         self.title = title
         self.subtitle = subtitle
@@ -90,10 +106,10 @@ extension Image {
 
 // MARK: - Standard View(s)
 
-struct StandardHeaderView: View {
+struct StandardHeaderView<Destination>: View where Destination: View{
     var title: String
     var subtitle: String?
-    var seeAllDestination: AnyView?
+    var seeAllDestination: Destination?
     
     var body: some View {
         HStack(alignment: .top) {

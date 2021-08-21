@@ -55,39 +55,9 @@ struct CharacterFilter: Hashable {
     var orderBy: String?
 }
 
-// TODO: share code with other InfoRequest
-
-final class CharacterInfoRequest: MarvelRequest<CharacterInfo>, Codable, InfoRequest {
+final class CharacterInfoRequest: MarvelRequest<CharacterFilter, CharacterInfo>, InfoRequest {
     
     static var requests = [CharacterFilter:CharacterInfoRequest]()
-    
-    static func create(_ filter: CharacterFilter, limit: Int?) -> CharacterInfoRequest {
-        if let request = requests[filter] {
-            return request
-        } else {
-            let request = CharacterInfoRequest(filter, limit: limit)
-            request.fetch(useCache: false)
-            requests[filter] = request
-            return request
-        }
-    }
-    
-    // MARK: - Request Parameter(s)
-    
-    private(set) var filter: CharacterFilter?
-    
-    // MARK: - Initialization
-    
-    private init(_ filter: CharacterFilter, limit: Int?) {
-        print("Creating the new Character Request...")
-        super.init()
-        self.filter = filter
-        if limit != nil { self.limit = limit! }
-    }
-    
-    // MARK: - Overrides
-    
-    override var cacheKey: String? { "\(type(of: self)).\(query)" }
     
     override var query: String {
         var request = "characters?"
@@ -102,26 +72,5 @@ final class CharacterInfoRequest: MarvelRequest<CharacterInfo>, Codable, InfoReq
         request.addMarvelArgument("limit", max(1, min(limit, 100)))
         request.addMarvelArgument("offset", offset)
         return request
-    }
-    
-    override func decode(_ json: Data) -> Array<CharacterInfo> {
-        let result = (try? JSONDecoder().decode(CharacterInfoRequest.self, from: json))?.marvelResultData
-        return result?.characters ?? []
-    }
-    
-    // MARK: - Decoding Data Structure
-    
-    private var marvelResultData: CharacterDataContainer?
-    
-    private enum CodingKeys: String, CodingKey {
-        case marvelResultData = "data"
-    }
-    
-    struct CharacterDataContainer: Codable {
-        let characters: [CharacterInfo]
-        
-        private enum CodingKeys: String, CodingKey {
-            case characters = "results"
-        }
     }
 }

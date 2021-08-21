@@ -51,39 +51,9 @@ struct ComicFilter: Hashable {
     var orderBy: String?
 }
 
-// TODO: share code with other InfoRequest
-
-final class ComicInfoRequest: MarvelRequest<ComicInfo>, Codable, InfoRequest {
+final class ComicInfoRequest: MarvelRequest<ComicFilter, ComicInfo>, InfoRequest {
     
     static var requests = [ComicFilter:ComicInfoRequest]()
-    
-    static func create(_ filter: ComicFilter, limit: Int?) -> ComicInfoRequest {
-        if let request = requests[filter] {
-            return request
-        } else {
-            let request = ComicInfoRequest(filter, limit: limit)
-            request.fetch(useCache: false)
-            requests[filter] = request
-            return request
-        }
-    }
-    
-    // MARK: - Request Parameter(s)
-    
-    private(set) var filter: ComicFilter?
-
-    // MARK: - Initialization
-    
-    init(_ filter: ComicFilter, limit: Int? = nil) {
-        print("Creating the new Comic Request...")
-        super.init()
-        self.filter = filter
-        if limit != nil { self.limit = limit! }
-    }
-    
-    // MARK: - Overrides
-    
-    override var cacheKey: String? { "\(type(of: self)).\(query)" }
     
     override var query: String {
         var request = "comics?"
@@ -105,26 +75,4 @@ final class ComicInfoRequest: MarvelRequest<ComicInfo>, Codable, InfoRequest {
         request.addMarvelArgument("offset", offset)
         return request
     }
-    
-    override func decode(_ json: Data) -> [ComicInfo] {
-        let result = (try? JSONDecoder().decode(ComicInfoRequest.self, from: json))?.marvelResultData
-        return result?.comics ?? []
-    }
-    
-    // MARK: - Decoding Data Structure
-    
-    private var marvelResultData: ComicDataContainer?
-    
-    private enum CodingKeys: String, CodingKey {
-        case marvelResultData = "data"
-    }
-    
-    struct ComicDataContainer: Codable {
-        let comics: [ComicInfo]
-        
-        private enum CodingKeys: String, CodingKey {
-            case comics = "results"
-        }
-    }
-    
 }

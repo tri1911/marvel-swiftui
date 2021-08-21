@@ -48,39 +48,9 @@ struct CreatorFilter: Hashable {
     var orderBy: String?
 }
 
-// TODO: share code with other InfoRequest
-
-final class CreatorInfoRequest: MarvelRequest<CreatorInfo>, Codable, InfoRequest {
+final class CreatorInfoRequest: MarvelRequest<CreatorFilter, CreatorInfo>, InfoRequest {
     
     static var requests = [CreatorFilter:CreatorInfoRequest]()
-    
-    static func create(_ filter: CreatorFilter, limit: Int?) -> CreatorInfoRequest {
-        if let request = requests[filter] {
-            return request
-        } else {
-            let request = CreatorInfoRequest(filter, limit: limit)
-            request.fetch(useCache: false)
-            requests[filter] = request
-            return request
-        }
-    }
-    
-    // MARK: - Request Parameter(s)
-    
-    private(set) var filter: CreatorFilter?
-    
-    // MARK: - Initialization
-    
-    private init(_ filter: CreatorFilter, limit: Int?) {
-        print("Creating the new Creator Request...")
-        super.init()
-        self.filter = filter
-        if limit != nil { self.limit = limit! }
-    }
-    
-    // MARK: - Overrides
-    
-    override var cacheKey: String? { "\(type(of: self)).\(query)" }
     
     override var query: String {
         var request = "creators?"
@@ -101,26 +71,5 @@ final class CreatorInfoRequest: MarvelRequest<CreatorInfo>, Codable, InfoRequest
         request.addMarvelArgument("limit", max(1, min(limit, 100)))
         request.addMarvelArgument("offset", offset)
         return request
-    }
-    
-    override func decode(_ json: Data) -> Array<CreatorInfo> {
-        let result = (try? JSONDecoder().decode(CreatorInfoRequest.self, from: json))?.marvelResultData
-        return result?.creators ?? []
-    }
-    
-    // MARK: - Decoding Data Structure
-    
-    private var marvelResultData: CreatorDataContainer?
-    
-    private enum CodingKeys: String, CodingKey {
-        case marvelResultData = "data"
-    }
-    
-    struct CreatorDataContainer: Codable {
-        let creators: [CreatorInfo]
-        
-        private enum CodingKeys: String, CodingKey {
-            case creators = "results"
-        }
     }
 }

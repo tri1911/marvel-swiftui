@@ -21,7 +21,7 @@ struct HomeView: View {
                     // Categories
                     VStack {
                         Divider().padding(.horizontal)
-                        StandardHeaderView(title: "Categories").padding(.horizontal)
+                        StandardHeaderView<AnyView>(title: "Categories").padding(.horizontal)
                         StandardSectionView(Category.allCases.map { $0.rawValue.capitalized }, id: \.self) { category in
                             CategoryCardView(content: category)
                         }
@@ -30,32 +30,40 @@ struct HomeView: View {
                     // New Characters
                     MarvelSectionView<CharacterInfoRequest>(CharacterFilter(orderBy: "-modified"), title: "Characters", seeAllDestination: AnyView(Text("All Characters"))) { character in
                         AnyView(
-                            CardView1(type: "Character", title: character.name, description: character.description, modified: character.modified_)
+                            NavigationLink(destination: CharacterDetailsView(character: character)) {
+                                CardView1(type: "Character", title: character.name, description: character.description, modified: character.modified_)
+                            }
                         )
                     }
                     
-                    //  Comics
+                    // Comics
                     MarvelSectionView<ComicInfoRequest>(ComicFilter(orderBy: "-modified"), title: "Newest Comics", seeAllDestination: AnyView(Text("All Comics"))) { comic in
                         AnyView(
-                            CardView2(title: comic.title, description: comic.description_)
+                            NavigationLink(destination: ComicDetailsView(comic: comic)) {
+                                CardView2(title: comic.title, description: comic.description_)
+                            }
                                 .frame(width: 165)
                         )
                     }
-                    
+
                     // Events
                     MarvelSectionView<EventInfoRequest>(EventFilter(orderBy: "-modified"), title: "Incoming Events", rowCount: 3, seeAllDestination: AnyView(Text("All Events"))) { event in
                         AnyView(
-                            CardView3(title: event.title, description: event.description)
+                            NavigationLink(destination: EventDetailsView(event: event)) {
+                                CardView3(title: event.title, description: event.description)
+                            }
                         )
                     }
-                    
+
                     // Series
                     MarvelSectionView<SeriesInfoRequest>(SeriesFilter(orderBy: "-modified"), title: "New Release Series", rowCount: 2, seeAllDestination: AnyView(Text("All Series"))) { series in
                         AnyView(
-                            CardView4(modified: series.modified, title: series.title, startYear: series.startYear, rating: series.rating )
+                            NavigationLink(destination: SeriesDetailsView(series: series)) {
+                                CardView4(modified: series.modified, title: series.title, startYear: series.startYear, rating: series.rating )
+                            }
                         )
                     }
-                    
+
                     // Stories
                     MarvelSectionView<StoryInfoRequest>(StoryFilter(orderBy: "-modified"), title: "Newest Stories", seeAllDestination: AnyView(Text("All Stories"))) { story in
                         AnyView(
@@ -66,7 +74,9 @@ struct HomeView: View {
                     // Creators
                     MarvelSectionView<CreatorInfoRequest>(CreatorFilter(orderBy: "-modified"), title: "Popular Creators", seeAllDestination: AnyView(Text("All Creators"))) { creator in
                         AnyView(
-                            CardView7(name: creator.fullName)
+                            NavigationLink(destination: CreatorDetailsView(creator: creator)) {
+                                CardView7(name: creator.fullName)
+                            }
                         )
                     }
                 }

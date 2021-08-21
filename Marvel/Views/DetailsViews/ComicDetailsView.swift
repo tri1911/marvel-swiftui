@@ -10,32 +10,7 @@ import SwiftUI
 struct ComicDetailsView: View {
     static let thumbnailSize: (width: CGFloat, height: CGFloat) = (200, 200)
     
-    @EnvironmentObject var store: MarvelStore
-    
     let comic: ComicInfo
-    
-    // MARK: - Filters
-    
-    let creatorFilter: CreatorFilter
-    let characterFilter: CharacterFilter
-    let seriesFilter: SeriesFilter
-    let eventFilter: EventFilter
-    let storyFilter: StoryFilter
-    
-    init(_ comic: ComicInfo) {
-        self.comic = comic
-        creatorFilter = CreatorFilter(comicId: comic.id)
-        characterFilter = CharacterFilter(comicId: comic.id)
-        seriesFilter = SeriesFilter(comicId: comic.id)
-        eventFilter = EventFilter(comicId: comic.id)
-        storyFilter = StoryFilter(comicId: comic.id)
-    }
-    
-    var creators: [CreatorInfo]? { store.creators[creatorFilter] }
-    var characters: [CharacterInfo]? { store.characters[characterFilter] }
-    var series: [SeriesInfo]? { store.series[seriesFilter] }
-    var events: [EventInfo]? { store.events[eventFilter] }
-    var stories: [StoryInfo]? { store.stories[storyFilter] }
     
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -62,13 +37,6 @@ struct ComicDetailsView: View {
         }
         .navigationTitle("Comic Details")
         .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            store.fetch(creatorFilter)
-            store.fetch(characterFilter)
-            store.fetch(seriesFilter)
-            store.fetch(eventFilter)
-            store.fetch(storyFilter)
-        }
     }
     
     // MARK: - Section(s)
@@ -104,37 +72,47 @@ struct ComicDetailsView: View {
     }
     
     var creatorsSection: some View {
-        StandardSectionView(creators, title: "Featured Creators", destination: Text("All Creators")) { creator in
+        MarvelSectionView<CreatorInfoRequest>(CreatorFilter(comicId: comic.id), title: "Featured Creators") { creator in
+            AnyView(
             CardView7(name: creator.fullName)
                 .frame(width: ComicDetailsView.thumbnailSize.width)
+            )
         }
     }
     
     var charactersSection: some View {
-        StandardSectionView(characters, title: "Featured Characters", destination: Text("All Characters")) { character in
+        MarvelSectionView<CharacterInfoRequest>(CharacterFilter(comicId: comic.id), title: "Featured Characters") { character in
+            AnyView(
             CardView2(title: character.name, description: character.description_)
                 .frame(width: ComicDetailsView.thumbnailSize.width)
+            )
         }
     }
     
     var seriesSection: some View {
-        StandardSectionView(series, title: "Featured series", destination: Text("All series")) { series in
+        MarvelSectionView<SeriesInfoRequest>(SeriesFilter(comicId: comic.id), title: "Featured series") { series in
+            AnyView(
             CardView2(title: series.title, description: series.description_)
                 .frame(width: ComicDetailsView.thumbnailSize.width)
+            )
         }
     }
     
     var eventsSection: some View {
-        StandardSectionView(events, title: "Featured events", destination: Text("All events")) { event in
+        MarvelSectionView<EventInfoRequest>(EventFilter(comicId: comic.id), title: "Featured events") { event in
+            AnyView(
             CardView2(title: event.title, description: event.description_)
                 .frame(width: ComicDetailsView.thumbnailSize.width)
+            )
         }
     }
     
     var storiesSection: some View {
-        StandardSectionView(stories, title: "Featured stories", destination: Text("All stories")) { story in
+        MarvelSectionView<StoryInfoRequest>(StoryFilter(comicId: comic.id), title: "Featured stories") { story in
+            AnyView(
             CardView2(title: story.title, description: story.description_)
                 .frame(width: ComicDetailsView.thumbnailSize.width)
+            )
         }
     }
     

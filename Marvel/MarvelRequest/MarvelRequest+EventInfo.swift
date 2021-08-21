@@ -53,39 +53,9 @@ struct EventFilter: Hashable {
     var orderBy: String?
 }
 
-// TODO: share code with other InfoRequest
-
-final class EventInfoRequest: MarvelRequest<EventInfo>, Codable, InfoRequest {
+final class EventInfoRequest: MarvelRequest<EventFilter, EventInfo>, InfoRequest {
     
     static var requests = [EventFilter:EventInfoRequest]()
-    
-    static func create(_ filter: EventFilter, limit: Int?) -> EventInfoRequest {
-        if let request = requests[filter] {
-            return request
-        } else {
-            let request = EventInfoRequest(filter, limit: limit)
-            request.fetch(useCache: false)
-            requests[filter] = request
-            return request
-        }
-    }
-    
-    // MARK: - Request Parameter(s)
-    
-    private(set) var filter: EventFilter?
-    
-    // MARK: - Initialization
-    
-    private init(_ filter: EventFilter, limit: Int?) {
-        print("Creating the new Character Request...")
-        super.init()
-        self.filter = filter
-        if limit != nil { self.limit = limit! }
-    }
-    
-    // MARK: - Overrides
-    
-    override var cacheKey: String? { "\(type(of: self)).\(query)" }
     
     override var query: String {
         var request = "events?"
@@ -101,26 +71,5 @@ final class EventInfoRequest: MarvelRequest<EventInfo>, Codable, InfoRequest {
         request.addMarvelArgument("limit", max(1, min(limit, 100)))
         request.addMarvelArgument("offset", offset)
         return request
-    }
-    
-    override func decode(_ json: Data) -> Array<EventInfo> {
-        let result = (try? JSONDecoder().decode(EventInfoRequest.self, from: json))?.marvelResultData
-        return result?.events ?? []
-    }
-    
-    // MARK: - Decoding Data Structure
-    
-    private var marvelResultData: EventDataContainer?
-    
-    private enum CodingKeys: String, CodingKey {
-        case marvelResultData = "data"
-    }
-    
-    struct EventDataContainer: Codable {
-        let events: [EventInfo]
-        
-        private enum CodingKeys: String, CodingKey {
-            case events = "results"
-        }
     }
 }
