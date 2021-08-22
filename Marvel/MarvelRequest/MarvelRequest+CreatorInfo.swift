@@ -20,14 +20,12 @@ struct CreatorInfo: Codable, Identifiable, Hashable {
     
     // MARK: - Syntactic Sugar
     
-    var title: String { fullName }
-    
     var description_: String { "" }
     
     var modified_: String {
         let date = ISO8601DateFormatter().date(from: modified) ?? Date()
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MM-dd-yyyy"
+        dateFormatter.dateFormat = "MMMM dd"
         return dateFormatter.string(from: date)
     }
     

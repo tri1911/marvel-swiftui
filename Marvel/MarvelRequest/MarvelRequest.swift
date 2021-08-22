@@ -22,7 +22,7 @@ class MarvelRequest<Filter, Info> where Info: Codable {
     private(set) var limit = 10
     private(set) var offset = 0
     
-    init(_ filter: Filter, limit: Int?) {
+    init(_ filter: Filter, limit: Int? = nil) {
         self.filter = filter
         if limit != nil { self.limit = limit! }
     }
@@ -57,7 +57,9 @@ class MarvelRequest<Filter, Info> where Info: Codable {
                             print("returned empty set")
                         } else if useCache {
                             self?.cache(results)
-                            print("successful fetching")
+                            print("successful fetching & caching")
+                        } else {
+                            print("successful fetching without caching")
                         }
                     }
             } else {

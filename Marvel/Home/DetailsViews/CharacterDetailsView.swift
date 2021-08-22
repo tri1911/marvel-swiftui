@@ -68,9 +68,3 @@ struct CharacterDetailsView: View {
         MarvelSectionView(StoryFilter(characterId: character.id), title: "Stories", showsSeeAll: false, itemHeight: 300)
     }
 }
-
-//struct CharacterDetailsView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        CharacterDetailsView()
-//    }
-//}

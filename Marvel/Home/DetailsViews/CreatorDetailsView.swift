@@ -13,13 +13,9 @@ struct CreatorDetailsView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack {
-                // Comics
                 comicsSection
-                // Series
                 seriesSection
-                // Events
                 eventsSection
-                // Stories
                 storiesSection
                 Spacer()
             }
@@ -43,9 +39,3 @@ struct CreatorDetailsView: View {
         MarvelSectionView(StoryFilter(creatorId: creator.id), title: "Stories", showsSeeAll: false, itemHeight: 300)
     }
 }
-
-//struct CreatorDetailsView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        CreatorDetailsView()
-//    }
-//}

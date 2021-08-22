@@ -41,7 +41,7 @@ struct ComicFilter: MarvelFilter {
     var formatType: String?
     var dateDescriptor: String?
     var title: String?
-    var titleStartsWith: String?
+    var titleStartsWith: String? // Searching parameter
     var startYear: Int?
     var isbn: String?
     var modifiedSince: String?

@@ -15,12 +15,8 @@ struct CharacterInfo: Codable, Identifiable, Hashable {
     let urls: [MarvelURL] // A set of public web site URLs for the resource
     let thumbnail: MarvelImage // The representative image for this character
     
-    // MARK: - MarvelInfo Conformance
-    
-    var title: String { name }
-    
     var description_: String { description.isEmpty ? "Default Description for Character" : description }
-    
+    // TODO: Share codes with other Info Class
     var modified_: String {
         let date = ISO8601DateFormatter().date(from: modified) ?? Date()
         let dateFormatter = DateFormatter()
@@ -50,7 +46,7 @@ struct CharacterFilter: MarvelFilter {
     typealias Request = CharacterInfoRequest
     typealias CardView = CharacterCardView
     var name: String?
-    var nameStartsWith: String?
+    var nameStartsWith: String? // Searching parameter
     var modifiedSince: String?
     var comicId: Int?
     var seriesId: Int?

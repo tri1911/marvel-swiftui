@@ -17,12 +17,12 @@ struct SeriesDetailsView: View {
                 mainInfo
                 // Comics
                 comicsSection
+                // Characters
+                charactersSection
                 // Stories
                 storiesSection
                 // Events
                 eventsSection
-                // Characters
-                charactersSection
                 // Creators
                 creatorsSection
             }
@@ -46,6 +46,10 @@ struct SeriesDetailsView: View {
         MarvelSectionView(ComicFilter(seriesId: series.id), title: "Comics", itemWidth: 200)
     }
     
+    var charactersSection: some View {
+        MarvelSectionView(CharacterFilter(seriesId: series.id), title: "Characters", itemWidth: 165)
+    }
+    
     var storiesSection: some View {
         MarvelSectionView(StoryFilter(seriesId: series.id), title: "Stories", showsSeeAll: false, itemHeight: 300)
     }
@@ -54,17 +58,7 @@ struct SeriesDetailsView: View {
         MarvelSectionView(EventFilter(seriesId: series.id), title: "Events", rowCount: 3)
     }
     
-    var charactersSection: some View {
-        MarvelSectionView(CharacterFilter(seriesId: series.id), title: "Characters", itemWidth: 165)
-    }
-    
     var creatorsSection: some View {
         MarvelSectionView(CreatorFilter(seriesId: series.id), title: "Creators", showsSeeAll: false)
     }
 }
-
-//struct SeriesDetailsView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        SeriesDetailsView()
-//    }
-//}

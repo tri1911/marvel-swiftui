@@ -13,17 +13,11 @@ struct EventDetailsView: View {
     var body: some View {
         ScrollView {
             VStack {
-                // Main Information
                 mainInfo
-                // Characters
                 charactersSection
-                // Series
-                seriesSection
-                // Comics
                 comicsSection
-                // Stories
+                seriesSection
                 storiesSection
-                // Creators
                 creatorsSection
             }
             
@@ -46,13 +40,12 @@ struct EventDetailsView: View {
     var charactersSection: some View {
         MarvelSectionView(CharacterFilter(eventId: event.id), title: "Characters", itemWidth: 200)
     }
+    var comicsSection: some View {
+        MarvelSectionView(ComicFilter(eventId: event.id), title: "Comics", itemWidth: 200)
+    }
     
     var seriesSection: some View {
         MarvelSectionView(SeriesFilter(eventId: event.id), title: "Series", rowCount: 2)
-    }
-    
-    var comicsSection: some View {
-        MarvelSectionView(ComicFilter(eventId: event.id), title: "Comics", itemWidth: 200)
     }
     
     var storiesSection: some View {
@@ -63,9 +56,3 @@ struct EventDetailsView: View {
         MarvelSectionView(CreatorFilter(eventId: event.id), title: "Creators", showsSeeAll: false)
     }
 }
-
-//struct EventDetailsView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        EventDetailsView()
-//    }
-//}

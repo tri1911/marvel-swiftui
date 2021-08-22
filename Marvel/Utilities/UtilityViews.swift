@@ -30,7 +30,7 @@ protocol InfoRequest {
 }
 
 extension InfoRequest {
-    static func create(_ filter: Filter, limit: Int?) -> Self {
+    static func create(_ filter: Filter, limit: Int? = nil) -> Self {
         if let request = requests[filter] {
             return request
         } else {
@@ -65,7 +65,7 @@ struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
     
     init(_ filter: Filter, title: String, subtitle: String? = nil, showsSeeAll: Bool = true, rowCount: Int? = nil, itemWidth: CGFloat? = nil, itemHeight: CGFloat? = nil) {
         self.filter = filter
-        self.request = Filter.Request.create(filter, limit: nil)
+        self.request = Filter.Request.create(filter)
 
         self.title = title
         self.subtitle = subtitle

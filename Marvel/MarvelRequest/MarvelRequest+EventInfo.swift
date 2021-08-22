@@ -26,7 +26,7 @@ struct EventInfo: Codable, Identifiable, Hashable {
     var modified_: String {
         let date = ISO8601DateFormatter().date(from: modified) ?? Date()
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MM-dd-yyyy"
+        dateFormatter.dateFormat = "MMMM dd"
         return dateFormatter.string(from: date)
     }
     

@@ -15,21 +15,13 @@ struct ComicDetailsView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack {
-                // Overview Information
                 overview
-                // Creators
-                creatorsSection
-                // Characters
                 charactersSection
-                // Series
                 seriesSection
-                // Events
                 eventsSection
-                // Stories
                 storiesSection
-                // Full Description
+                creatorsSection
                 fullDescription
-                // More detail information
                 detailsInformation
                 Spacer()
             }
@@ -70,11 +62,7 @@ struct ComicDetailsView: View {
             }
         }
     }
-    
-    var creatorsSection: some View {
-        MarvelSectionView(CreatorFilter(comicId: comic.id), title: "Creators", showsSeeAll: false)
-    }
-    
+
     var charactersSection: some View {
         MarvelSectionView(CharacterFilter(comicId: comic.id), title: "Characters", itemWidth: 165)
     }
@@ -89,6 +77,10 @@ struct ComicDetailsView: View {
     
     var storiesSection: some View {
         MarvelSectionView(StoryFilter(comicId: comic.id), title: "Stories", showsSeeAll: false, itemHeight: 300)
+    }
+    
+    var creatorsSection: some View {
+        MarvelSectionView(CreatorFilter(comicId: comic.id), title: "Creators", showsSeeAll: false)
     }
     
     var fullDescription: some View {
@@ -129,9 +121,3 @@ struct ComicDetailsView: View {
         }
     }
 }
-
-//struct ComicDetailsView_Previews: PreviewProvider {
-//    static var previews: some View {
-//        ComicDetailsView()
-//    }
-//}
