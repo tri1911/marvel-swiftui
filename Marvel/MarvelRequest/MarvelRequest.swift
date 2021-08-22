@@ -68,7 +68,7 @@ class MarvelRequest<Filter, Info> where Info: Codable {
     
     func stopFetching() { fetchCancellable?.cancel() }
     
-    // MARK: - Caching
+    // MARK: - Caching (For Testing purpose)
     
     private var cacheKey: String? { "\(type(of: self)).\(query)" }
     private var cachedData: Data? { cacheKey != nil ? UserDefaults.standard.data(forKey: cacheKey!) : nil }

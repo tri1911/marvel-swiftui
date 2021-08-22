@@ -72,48 +72,23 @@ struct ComicDetailsView: View {
     }
     
     var creatorsSection: some View {
-        MarvelSectionView<CreatorInfoRequest>(CreatorFilter(comicId: comic.id), title: "Featured Creators") { creator in
-            AnyView(
-            CardView7(name: creator.fullName)
-                .frame(width: ComicDetailsView.thumbnailSize.width)
-            )
-        }
+        MarvelSectionView(CreatorFilter(comicId: comic.id), title: "Creators", showsSeeAll: false)
     }
     
     var charactersSection: some View {
-        MarvelSectionView<CharacterInfoRequest>(CharacterFilter(comicId: comic.id), title: "Featured Characters") { character in
-            AnyView(
-            CardView2(title: character.name, description: character.description_)
-                .frame(width: ComicDetailsView.thumbnailSize.width)
-            )
-        }
+        MarvelSectionView(CharacterFilter(comicId: comic.id), title: "Characters", itemWidth: 165)
     }
     
     var seriesSection: some View {
-        MarvelSectionView<SeriesInfoRequest>(SeriesFilter(comicId: comic.id), title: "Featured series") { series in
-            AnyView(
-            CardView2(title: series.title, description: series.description_)
-                .frame(width: ComicDetailsView.thumbnailSize.width)
-            )
-        }
+        MarvelSectionView(SeriesFilter(comicId: comic.id), title: "Series", rowCount: 2)
     }
     
     var eventsSection: some View {
-        MarvelSectionView<EventInfoRequest>(EventFilter(comicId: comic.id), title: "Featured events") { event in
-            AnyView(
-            CardView2(title: event.title, description: event.description_)
-                .frame(width: ComicDetailsView.thumbnailSize.width)
-            )
-        }
+        MarvelSectionView(EventFilter(comicId: comic.id), title: "Events", rowCount: 3)
     }
     
     var storiesSection: some View {
-        MarvelSectionView<StoryInfoRequest>(StoryFilter(comicId: comic.id), title: "Featured stories") { story in
-            AnyView(
-            CardView2(title: story.title, description: story.description_)
-                .frame(width: ComicDetailsView.thumbnailSize.width)
-            )
-        }
+        MarvelSectionView(StoryFilter(comicId: comic.id), title: "Stories", showsSeeAll: false, itemHeight: 300)
     }
     
     var fullDescription: some View {

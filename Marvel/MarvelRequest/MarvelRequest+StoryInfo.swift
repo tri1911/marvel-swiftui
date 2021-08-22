@@ -38,7 +38,9 @@ struct StoryInfo: Codable, Identifiable, Hashable {
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
-struct StoryFilter: Hashable {
+struct StoryFilter: MarvelFilter {
+    typealias Request = StoryInfoRequest
+    typealias CardView = StoryCardView
     var modifiedSince: String?
     var comicId: Int?
     var seriesId: Int?

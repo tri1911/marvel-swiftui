@@ -28,39 +28,19 @@ struct CreatorDetailsView: View {
     }
     
     var comicsSection: some View {
-        MarvelSectionView<ComicInfoRequest>(ComicFilter(creatorId: creator.id), title: "Comics") { comic in
-            AnyView(
-                CardView2(title: comic.title, description: comic.description_)
-                .frame(width: 200)
-            )
-        }
+        MarvelSectionView(ComicFilter(creatorId: creator.id), title: "Comics", itemWidth: 200)
     }
     
     var seriesSection: some View {
-        MarvelSectionView<SeriesInfoRequest>(SeriesFilter(creatorId: creator.id), title: "Series") { series in
-            AnyView(
-                CardView2(title: series.title, description: series.description_)
-                .frame(width: 200)
-            )
-        }
+        MarvelSectionView(SeriesFilter(creatorId: creator.id), title: "Series", rowCount: 2)
     }
     
     var eventsSection: some View {
-        MarvelSectionView<EventInfoRequest>(EventFilter(creatorId: creator.id), title: "Events") { event in
-            AnyView(
-                CardView2(title: event.title, description: event.description_)
-                .frame(width: 200)
-            )
-        }
+        MarvelSectionView(EventFilter(creatorId: creator.id), title: "Events", rowCount: 3)
     }
     
     var storiesSection: some View {
-        MarvelSectionView<StoryInfoRequest>(StoryFilter(creatorId: creator.id), title: "Stories") { story in
-            AnyView(
-                CardView2(title: story.title, description: story.description_)
-                .frame(width: 200)
-            )
-        }
+        MarvelSectionView(StoryFilter(creatorId: creator.id), title: "Stories", showsSeeAll: false, itemHeight: 300)
     }
 }
 

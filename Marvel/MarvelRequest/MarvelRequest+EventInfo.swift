@@ -41,7 +41,9 @@ struct EventInfo: Codable, Identifiable, Hashable {
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
-struct EventFilter: Hashable {
+struct EventFilter: MarvelFilter {
+    typealias Request = EventInfoRequest
+    typealias CardView = EventCardView
     var name: String?
     var nameStartsWith: String?
     var modifiedSince: String?

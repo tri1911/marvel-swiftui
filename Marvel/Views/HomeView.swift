@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct HomeView: View {
-    
     var body: some View {
         NavigationView {
             ScrollView(.vertical, showsIndicators: false) {
@@ -22,63 +21,28 @@ struct HomeView: View {
                     VStack {
                         Divider().padding(.horizontal)
                         StandardHeaderView<AnyView>(title: "Categories").padding(.horizontal)
-                        StandardSectionView(Category.allCases.map { $0.rawValue.capitalized }, id: \.self) { category in
-                            CategoryCardView(content: category)
+                        StandardSectionView(Category.allCases.map { $0.rawValue.capitalized }, id: \.self) {
+                            CategoryCardView(category: $0)
                         }
                     }
                     
-                    // New Characters
-                    MarvelSectionView<CharacterInfoRequest>(CharacterFilter(orderBy: "-modified"), title: "Characters", seeAllDestination: AnyView(Text("All Characters"))) { character in
-                        AnyView(
-                            NavigationLink(destination: CharacterDetailsView(character: character)) {
-                                CardView1(type: "Character", title: character.name, description: character.description, modified: character.modified_)
-                            }
-                        )
-                    }
+                    // Characters
+                    MarvelSectionView(CharacterFilter(orderBy: "-modified"), title: "Characters", itemWidth: 165)
                     
                     // Comics
-                    MarvelSectionView<ComicInfoRequest>(ComicFilter(orderBy: "-modified"), title: "Newest Comics", seeAllDestination: AnyView(Text("All Comics"))) { comic in
-                        AnyView(
-                            NavigationLink(destination: ComicDetailsView(comic: comic)) {
-                                CardView2(title: comic.title, description: comic.description_)
-                            }
-                                .frame(width: 165)
-                        )
-                    }
-
+                    MarvelSectionView(ComicFilter(orderBy: "-modified"), title: "Newest Comics", itemWidth: 250)
+                    
                     // Events
-                    MarvelSectionView<EventInfoRequest>(EventFilter(orderBy: "-modified"), title: "Incoming Events", rowCount: 3, seeAllDestination: AnyView(Text("All Events"))) { event in
-                        AnyView(
-                            NavigationLink(destination: EventDetailsView(event: event)) {
-                                CardView3(title: event.title, description: event.description)
-                            }
-                        )
-                    }
-
+                    MarvelSectionView(EventFilter(orderBy: "-modified"), title: "Incoming Events", rowCount: 3)
+                    
                     // Series
-                    MarvelSectionView<SeriesInfoRequest>(SeriesFilter(orderBy: "-modified"), title: "New Release Series", rowCount: 2, seeAllDestination: AnyView(Text("All Series"))) { series in
-                        AnyView(
-                            NavigationLink(destination: SeriesDetailsView(series: series)) {
-                                CardView4(modified: series.modified, title: series.title, startYear: series.startYear, rating: series.rating )
-                            }
-                        )
-                    }
-
+                    MarvelSectionView(SeriesFilter(orderBy: "-modified"), title: "New Release Series", rowCount: 2)
+                    
                     // Stories
-                    MarvelSectionView<StoryInfoRequest>(StoryFilter(orderBy: "-modified"), title: "Newest Stories", seeAllDestination: AnyView(Text("All Stories"))) { story in
-                        AnyView(
-                            CardView6(title: story.title)
-                        )
-                    }
-
+                    MarvelSectionView(StoryFilter(orderBy: "-modified"), title: "Newest Stories", showsSeeAll: false, itemHeight: 300)
+                    
                     // Creators
-                    MarvelSectionView<CreatorInfoRequest>(CreatorFilter(orderBy: "-modified"), title: "Popular Creators", seeAllDestination: AnyView(Text("All Creators"))) { creator in
-                        AnyView(
-                            NavigationLink(destination: CreatorDetailsView(creator: creator)) {
-                                CardView7(name: creator.fullName)
-                            }
-                        )
-                    }
+                    MarvelSectionView(CreatorFilter(orderBy: "-modified"), title: "Popular Creators", showsSeeAll: false)
                 }
             }
             .navigationTitle("Marvel")

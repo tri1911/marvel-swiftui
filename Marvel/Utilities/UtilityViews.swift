@@ -8,8 +8,18 @@
 import SwiftUI
 import Combine
 
+protocol MarvelCardView: View {
+    associatedtype Info
+    init(_ info: Info)
+}
+
+protocol MarvelFilter: Hashable {
+    associatedtype Request: InfoRequest where Self == Request.Filter
+    associatedtype CardView: MarvelCardView where CardView.Info == Request.Info
+}
+
 protocol InfoRequest {
-    associatedtype Filter: Hashable
+    associatedtype Filter: MarvelFilter
     associatedtype Info: Identifiable, Hashable
     
     static var requests: [Filter:Self] { get set }
@@ -32,50 +42,51 @@ extension InfoRequest {
     }
 }
 
-struct MarvelSectionView<Request>: View where Request: InfoRequest {
+struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
     
     // MARK: - Predicate
     
-    let filter: Request.Filter
-    let request: Request
+    let filter: Filter
+    let request: Filter.Request
     
     // MARK: - Header
     
     let title: String
     let subtitle: String?
+    let showsSeeAll: Bool
     
     // MARK: - Content
     
     let rowCount: Int?
-    let seeAllDestination: AnyView?
-    let viewForItem: (Request.Info) -> AnyView
+    let itemWidth: CGFloat?
+    let itemHeight: CGFloat?
     
-    @State private var infos = [Request.Info]()
+    @State private var infos = [Filter.Request.Info]()
     
-    init(_ filter: Request.Filter, title: String, subtitle: String? = nil, rowCount: Int? = nil, seeAllDestination: AnyView? = nil, viewForItem: @escaping (Request.Info) -> AnyView) {
-
+    init(_ filter: Filter, title: String, subtitle: String? = nil, showsSeeAll: Bool = true, rowCount: Int? = nil, itemWidth: CGFloat? = nil, itemHeight: CGFloat? = nil) {
         self.filter = filter
-        self.request = Request.create(filter, limit: nil)
+        self.request = Filter.Request.create(filter, limit: nil)
 
         self.title = title
         self.subtitle = subtitle
+        self.showsSeeAll = showsSeeAll
         self.rowCount = rowCount
-        self.seeAllDestination = seeAllDestination
-        self.viewForItem = viewForItem
+        self.itemWidth = itemWidth
+        self.itemHeight = itemHeight
     }
     
     var body: some View {
         VStack {
             Divider().padding(.horizontal)
             
-            StandardHeaderView(title: title, subtitle: subtitle, seeAllDestination: seeAllDestination)
+            StandardHeaderView(title: title, subtitle: subtitle, seeAllDestination: showsSeeAll && !infos.isEmpty ? seeAllDestination : nil)
                 .padding(.horizontal)
             
             if let rowCount = rowCount {
                 StandardSectionView(infos.dividesToGroup(of: rowCount), id: \.self) { group in
                     VStack(alignment: .leading, spacing: 15) {
                         ForEach(group) { info in
-                            viewForItem(info)
+                            Filter.CardView(info)
                             if let index = group.firstIndex { $0.id == info.id }, index != group.count - 1 {
                                 Divider()
                             }
@@ -83,11 +94,25 @@ struct MarvelSectionView<Request>: View where Request: InfoRequest {
                     }
                 }
             } else {
-                StandardSectionView(infos, viewForItem: viewForItem)
+                StandardSectionView(infos) { info in
+                    Filter.CardView(info)
+                        .frame(width: itemWidth, height: itemHeight)
+                }
             }
         }
         .onReceive(request.results) { results in
             infos = results
+        }
+    }
+    
+    @ViewBuilder
+    var seeAllDestination: some View {
+        if rowCount != nil {
+            List { ForEach(infos) { Filter.CardView($0).padding()} }
+        } else {
+            ScrollView {
+                StandardGridView(items: infos) { Filter.CardView($0) }.padding()
+            }
         }
     }
 }
@@ -106,7 +131,7 @@ extension Image {
 
 // MARK: - Standard View(s)
 
-struct StandardHeaderView<Destination>: View where Destination: View{
+struct StandardHeaderView<Destination>: View where Destination: View {
     var title: String
     var subtitle: String?
     var seeAllDestination: Destination?
@@ -128,7 +153,11 @@ struct StandardHeaderView<Destination>: View where Destination: View{
             Spacer()
             
             if let destination = seeAllDestination {
-                NavigationLink(destination: destination.navigationTitle(title)) {
+                NavigationLink(destination: destination
+                                .buttonStyle(PlainButtonStyle())
+                                .navigationTitle(title)
+                                .navigationBarTitleDisplayMode(.inline)
+                ) {
                     Text("See All")
                 }
             }
@@ -155,7 +184,7 @@ struct StandardSectionView<Item, ID, ItemView>: View where ID: Hashable, ItemVie
                     .padding()
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(alignment: .top, spacing: 10) { // Spacing: 10 or 15
+                    HStack(alignment: .top, spacing: 15) {
                         ForEach(items, id: id) { item in
                             viewForItem(item)
                         }
@@ -182,7 +211,7 @@ struct StandardGridView<Item, ItemView>: View where Item: Identifiable, ItemView
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 2)
     
     var items: [Item]
-    var viewForItem: (Item) -> ItemView
+    @ViewBuilder var viewForItem: (Item) -> ItemView
     
     var body: some View {
         LazyVGrid(columns: columns, spacing: 20) {
@@ -193,170 +222,211 @@ struct StandardGridView<Item, ItemView>: View where Item: Identifiable, ItemView
     }
 }
 
-
-// MARK: - SeeAllDestination View(s)
-
-struct SeeAllDemoView1<Item>: View where Item: Identifiable {
-    var items: [Item]
-    var titleKey: KeyPath<Item, String>
-    var descriptionKey: KeyPath<Item, String>
-    
-    init(_ items: [Item], titleKey: KeyPath<Item, String>, descriptionKey: KeyPath<Item, String>) {
-        self.items = items
-        self.titleKey = titleKey
-        self.descriptionKey = descriptionKey
-    }
-    
-    var body: some View {
-        ScrollView {
-            StandardGridView(items: items) { item in
-                CardView2(title: item[keyPath: titleKey], description: item[keyPath: descriptionKey].isEmpty ? "Default Description" : item[keyPath: descriptionKey])
-            }
-            .padding()
-        }
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-struct SeeAllDemoView2<Item>: View where Item: Identifiable {
-    var items: [Item]
-    var titleKey: KeyPath<Item, String>
-    var descriptionKey: KeyPath<Item, String>
-    
-    init(_ items: [Item], titleKey: KeyPath<Item, String>, descriptionKey: KeyPath<Item, String>) {
-        self.items = items
-        self.titleKey = titleKey
-        self.descriptionKey = descriptionKey
-    }
-    
-    var body: some View {
-        List {
-            ForEach(items) { item in
-                CardView3(title: item[keyPath: titleKey], description: item[keyPath: descriptionKey])
-                    .padding(.vertical)
-            }
-        }
-    }
-}
-
 // MARK: - Card View(s)
 
-// Large VCard which has the fixed width size of 250
-struct CardView1: View {
-    private let size: CGFloat = 250
+struct CharacterCardView: MarvelCardView {
+    let character: CharacterInfo
     
-    var type: String = "Recently Added"
-    var title: String = "Title"
-    var description: String = "Get hooked on a hearty helping of heroes and villains from the humble House of Ideas!"
-    var modified: String = "None"
+    init(_ info: CharacterInfo) {
+        self.character = info
+    }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Image.soobinThumbnail(width: size, height: size)
-
-            VStack(alignment: .leading, spacing: 5) {
-                Text((type).uppercased())
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(.gray)
-                Text(title)
-                    .font(.system(size: 18, weight: .semibold, design: .rounded))
-                    .lineLimit(1)
-                Text(description.isEmpty ? "Default Description" : description)
-                    .font(.footnote)
-                    .foregroundColor(.gray)
-                    .lineLimit(1)
-                Text("Added: \(modified)")
-                    .font(.footnote)
-                    .foregroundColor(.purple)
+        NavigationLink(destination: CharacterDetailsView(character: character)) {
+            VStack(alignment: .leading, spacing: 10) {
+                GeometryReader { geometry in
+                    Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
+                }
+                
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(character.modified_.uppercased())
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.gray)
+                    Text(character.name)
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .lineLimit(1)
+                    Text(character.description.isEmpty ? "Get hooked on a hearty helping of heroes and villains from the humble House of Ideas!" : character.description) // description_?????
+                        .font(.footnote)
+                        .foregroundColor(.gray)
+                        .lineLimit(2)
+                }
             }
+            .aspectRatio(0.75, contentMode: .fit)
         }
-        .frame(width: size)
     }
 }
 
-// Regular VCard which depends on the assigned width of the parent view
-struct CardView2: View {
-    var title: String
-    var description: String
+struct ComicCardView: MarvelCardView {
+    let comic: ComicInfo
+    
+    init(_ info: ComicInfo) {
+        self.comic = info
+    }
     
     var body: some View {
-        VStack(alignment: .leading) {
-            GeometryReader { geometry in
-                Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
+        NavigationLink(destination: ComicDetailsView(comic: comic)) {
+            VStack(alignment: .leading, spacing: 10) {
+                GeometryReader { geometry in
+                    Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
+                }
+                
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(comic.modified_.uppercased())
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.gray)
+                    Text(comic.title)
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .lineLimit(1)
+                    Text(comic.description_)
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .lineLimit(2)
+                }
             }
-            Text(title)
-                .font(.footnote)
-                .lineLimit(1)
-            Text(description)
-                .font(.caption)
-                .foregroundColor(.gray)
-                .lineLimit(1)
+            .aspectRatio(0.75, contentMode: .fit)
         }
-        .aspectRatio(0.8, contentMode: .fit)
     }
 }
 
-// HCard 1
-struct CardView3: View {
+struct EventCardView: MarvelCardView {
     private let defaultSize: CGFloat = 70
+    let event: EventInfo
     
-    var title: String
-    var description: String
-    
-    var body: some View {
-        HStack(spacing: 15) {
-            Image.soobinThumbnail(width: defaultSize, height: defaultSize)
-            Text("1")
-                .font(.callout)
-                .fontWeight(.bold)
-            VStack(alignment: .leading, spacing: 5) {
-                Text(title.isEmpty ? "Spittin' Chiclets Episode 347: Featuring Kevin Weekes + HockeyFest Recap With Matt Murley" : title)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(description.isEmpty ? "Tuesday - 3 hrs, 4 min." : description)
-                    .font(.caption2)
-                    .foregroundColor(.gray)
-                    .lineLimit(3)
-            }
-            .padding(.trailing)
-            Spacer()
-        }
-        .frame(width: UIScreen.main.bounds.width * 0.9)
+    init(_ info: EventInfo) {
+        self.event = info
     }
-}
-
-// HCard 2
-struct CardView4: View {
-    var modified: String
-    var title: String
-    var startYear: Int?
-    var rating: String?
     
     var body: some View {
-        HStack(alignment: .top) {
-            Image.soobinThumbnail(width: 100, height: 100)
-            VStack(alignment: .leading) {
-                Text((modified.isEmpty ? "July 9" : modified).uppercased())
-                    .foregroundColor(.gray)
-                    .font(.caption2)
-                Spacer()
-                Text(title.isEmpty ? "Swipe Right for The Climate (with Dr Ayana Elizabeth Johnson)" : title)
+        NavigationLink(destination: EventDetailsView(event: event)) {
+            HStack(spacing: 15) {
+                Image.soobinThumbnail(width: defaultSize, height: defaultSize)
+                Text("1")
                     .font(.callout)
                     .fontWeight(.bold)
-                    .lineLimit(/*@START_MENU_TOKEN@*/2/*@END_MENU_TOKEN@*/)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer()
-                HStack {
-                    Image(systemName: "lasso.sparkles")
-                    Text(String(startYear ?? -1))
-                        .font(.caption)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(event.title)
+                        .fontWeight(.medium)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text(event.description_)
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                        .lineLimit(3)
                 }
-                .foregroundColor(.purple)
-                Text(rating ?? "")
+                .padding(.trailing)
+                Spacer()
             }
-            Spacer()
+            .frame(width: UIScreen.main.bounds.width * 0.9)
         }
-        .frame(width: UIScreen.main.bounds.width * 0.9, height: 110)
+    }
+}
+
+struct SeriesCardView: MarvelCardView {
+    let series: SeriesInfo
+    
+    init(_ info: SeriesInfo) {
+        self.series = info
+    }
+    
+    var body: some View {
+        NavigationLink(destination: SeriesDetailsView(series: series)) {
+            HStack(alignment: .top) {
+                Image.soobinThumbnail(width: 100, height: 100)
+                VStack(alignment: .leading) {
+                    Text(series.modified_.uppercased())
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(.gray)
+                    Spacer()
+                    Text(series.title)
+                        .font(.callout)
+                        .fontWeight(.medium)
+                        .lineLimit(/*@START_MENU_TOKEN@*/2/*@END_MENU_TOKEN@*/)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer()
+                    HStack {
+                        Text("Series")
+                        Image(systemName: "circlebadge.fill").font(.system(size: 5))
+                        Text(verbatim: "\(series.startYear)")
+                        Image(systemName: "circlebadge.fill").font(.system(size: 5))
+                        Text("\(series.rating.isEmpty ? "90%" : series.rating) Rating")
+                    }
+                    .font(.caption)
+                    .foregroundColor(.purple)
+                }
+                Spacer()
+            }
+            .frame(width: UIScreen.main.bounds.width * 0.9, height: 110)
+        }
+    }
+}
+
+struct StoryCardView: MarvelCardView {
+    var defaultSize: (CGFloat, CGFloat) {
+        let width = UIScreen.main.bounds.width * 0.6
+        let height = width * 1.3
+        return (width, height)
+    }
+    
+    let story: StoryInfo
+    
+    init(_ info: StoryInfo) {
+        self.story = info
+    }
+    
+    var body: some View {
+        Image.soobinThumbnail(width: defaultSize.0, height: defaultSize.1)
+            .overlay(banner, alignment: .bottom)
+            .cornerRadius(10.0)
+    }
+    
+    var banner: some View {
+        ZStack {
+            Rectangle()
+                .frame(height: defaultSize.0 * 0.3)
+                .foregroundColor(.black.opacity(0.9))
+            Text(story.title)
+                .font(.footnote)
+                .lineLimit(3)
+                .multilineTextAlignment(.center)
+                .foregroundColor(.white)
+                .padding(.horizontal)
+        }
+    }
+}
+
+struct CreatorCardView: MarvelCardView {
+    let creator: CreatorInfo
+    
+    init(_ info: CreatorInfo) {
+        self.creator = info
+    }
+    
+    var body: some View {
+        NavigationLink(destination: CreatorDetailsView(creator: creator)) {
+            VStack {
+                Image.soobinThumbnail(width: 100, height: 100).clipShape(Circle())
+                Text(creator.fullName)
+            }
+            .frame(maxWidth: 100)
+        }
+    }
+}
+
+struct CategoryCardView: View {
+    let category: String
+    
+    var body: some View {
+        ZStack(alignment: .leading) {
+            RadialGradient(gradient: Gradient(colors: [.purple, .blue]), center: .topLeading, startRadius: 5, endRadius: 500)
+            Text(category)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(.white)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: 130)
+        }
+        .cornerRadius(5.0)
+        .aspectRatio(2.2, contentMode: .fit)
+        .frame(width: 220)
     }
 }
 
@@ -379,68 +449,6 @@ struct CardView5: View {
     }
 }
 
-// Bottom Banner (Shows Subtitle)
-struct CardView6: View {
-    var defaultSize: (CGFloat, CGFloat) {
-        let width = UIScreen.main.bounds.width * 0.6
-        let height = width * 1.3
-        return (width, height)
-    }
-    
-    var title: String
-    
-    var body: some View {
-        Image.soobinThumbnail(width: defaultSize.0, height: defaultSize.1)
-            .overlay(banner, alignment: .bottom)
-            .cornerRadius(10.0)
-    }
-    
-    var banner: some View {
-        ZStack {
-            Rectangle()
-                .frame(height: defaultSize.0 * 0.3)
-                .foregroundColor(.purple)
-            Text(title.isEmpty ? "One of a  kind podcasts featuring the funny and the fascinating." : title)
-                .font(.footnote)
-                .lineLimit(3)
-                .multilineTextAlignment(.center)
-                .foregroundColor(.white)
-                .padding(.horizontal)
-        }
-    }
-}
-
-// Card View for Creators
-struct CardView7: View {
-    let name: String
-    
-    var body: some View {
-        VStack {
-            Image.soobinThumbnail(width: 100, height: 100)
-                .clipShape(Circle())
-                .padding(.trailing, 10)
-            Text(name)
-        }
-    }
-}
-
-struct CategoryCardView: View {
-    let content: String
-    
-    var body: some View {
-        ZStack(alignment: .leading) {
-            RadialGradient(gradient: Gradient(colors: [.purple, .blue]), center: .topLeading, startRadius: 5, endRadius: 500)
-            Text(content)
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(.white)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: 130)
-        }
-        .cornerRadius(5.0)
-        .aspectRatio(2.2, contentMode: .fit)
-        .frame(width: 220)
-    }
-}
 
 // MARK: - Default Search Result View (Categories)
 

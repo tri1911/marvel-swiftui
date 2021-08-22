@@ -20,6 +20,10 @@ struct CreatorInfo: Codable, Identifiable, Hashable {
     
     // MARK: - Syntactic Sugar
     
+    var title: String { fullName }
+    
+    var description_: String { "" }
+    
     var modified_: String {
         let date = ISO8601DateFormatter().date(from: modified) ?? Date()
         let dateFormatter = DateFormatter()
@@ -31,7 +35,9 @@ struct CreatorInfo: Codable, Identifiable, Hashable {
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
-struct CreatorFilter: Hashable {
+struct CreatorFilter: MarvelFilter {
+    typealias Request = CreatorInfoRequest
+    typealias CardView = CreatorCardView
     var firstName: String?
     var middleName: String?
     var lastName: String?

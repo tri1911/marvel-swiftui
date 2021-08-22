@@ -27,7 +27,7 @@ struct SeriesInfo: Codable, Identifiable, Hashable {
     var modified_: String {
         let date = ISO8601DateFormatter().date(from: modified) ?? Date()
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MM-dd-yyyy"
+        dateFormatter.dateFormat = "MMMM dd"
         return dateFormatter.string(from: date)
     }
     
@@ -42,7 +42,9 @@ struct SeriesInfo: Codable, Identifiable, Hashable {
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
-struct SeriesFilter: Hashable {
+struct SeriesFilter: MarvelFilter {
+    typealias Request = SeriesInfoRequest
+    typealias CardView = SeriesCardView
     var title: String?
     var titleStartsWith: String?
     var startYear: Int?

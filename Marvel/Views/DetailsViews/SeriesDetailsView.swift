@@ -38,52 +38,28 @@ struct SeriesDetailsView: View {
             Text("Description")
             // urls
             Text("URLs")
-            // startYear, endYear, rating, next, prev (if needed)
+            // startYear, endYear, rating, next, previous (if needed)
         }
     }
     
     var comicsSection: some View {
-        MarvelSectionView<ComicInfoRequest>(ComicFilter(seriesId: series.id), title: "Comics") { comic in
-            AnyView(
-                CardView2(title: comic.title, description: comic.description_)
-                    .frame(width: 200)
-            )
-        }
+        MarvelSectionView(ComicFilter(seriesId: series.id), title: "Comics", itemWidth: 200)
     }
     
     var storiesSection: some View {
-        MarvelSectionView<StoryInfoRequest>(StoryFilter(seriesId: series.id), title: "Stories") { story in
-            AnyView(
-                CardView2(title: story.title, description: story.description_)
-                    .frame(width: 200)
-            )
-        }
+        MarvelSectionView(StoryFilter(seriesId: series.id), title: "Stories", showsSeeAll: false, itemHeight: 300)
     }
     
     var eventsSection: some View {
-        MarvelSectionView<EventInfoRequest>(EventFilter(seriesId: series.id), title: "Events") { event in
-            AnyView(
-                CardView2(title: event.title, description: event.description_)
-                    .frame(width: 200)
-            )
-        }
+        MarvelSectionView(EventFilter(seriesId: series.id), title: "Events", rowCount: 3)
     }
     
     var charactersSection: some View {
-        MarvelSectionView<CharacterInfoRequest>(CharacterFilter(seriesId: series.id), title: "Characters") { character in
-            AnyView(
-                CardView2(title: character.name, description: character.description_)
-                    .frame(width: 200)
-            )
-        }
+        MarvelSectionView(CharacterFilter(seriesId: series.id), title: "Characters", itemWidth: 165)
     }
     
     var creatorsSection: some View {
-        MarvelSectionView<CreatorInfoRequest>(CreatorFilter(seriesId: series.id), title: "Creators") { creator in
-            AnyView(
-                CardView7(name: creator.fullName)
-            )
-        }
+        MarvelSectionView(CreatorFilter(seriesId: series.id), title: "Creators", showsSeeAll: false)
     }
 }
 

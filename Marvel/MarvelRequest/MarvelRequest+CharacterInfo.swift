@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct CharacterInfo: Codable, Hashable, Identifiable {
+struct CharacterInfo: Codable, Identifiable, Hashable {
     let id: Int // The unique ID of the character resource
     let name: String // The name of the character
     let description: String // A short bio or description of the character
@@ -15,14 +15,16 @@ struct CharacterInfo: Codable, Hashable, Identifiable {
     let urls: [MarvelURL] // A set of public web site URLs for the resource
     let thumbnail: MarvelImage // The representative image for this character
     
-    // MARK: - Syntactic Sugar
+    // MARK: - MarvelInfo Conformance
+    
+    var title: String { name }
     
     var description_: String { description.isEmpty ? "Default Description for Character" : description }
     
     var modified_: String {
         let date = ISO8601DateFormatter().date(from: modified) ?? Date()
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MM-dd-yyyy"
+        dateFormatter.dateFormat = "MMMM dd"
         return dateFormatter.string(from: date)
     }
     
@@ -44,7 +46,9 @@ struct MarvelImage: Codable {
     var url: URL? { URL(string: "https\(path.dropFirst(4)).\(`extension`)") }
 }
 
-struct CharacterFilter: Hashable {
+struct CharacterFilter: MarvelFilter {
+    typealias Request = CharacterInfoRequest
+    typealias CardView = CharacterCardView
     var name: String?
     var nameStartsWith: String?
     var modifiedSince: String?

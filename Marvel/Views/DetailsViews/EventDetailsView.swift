@@ -44,47 +44,23 @@ struct EventDetailsView: View {
     }
     
     var charactersSection: some View {
-        MarvelSectionView<CharacterInfoRequest>(CharacterFilter(eventId: event.id), title: "Characters") { character in
-            AnyView(
-                CardView2(title: character.name, description: character.description_)
-                .frame(width: 200)
-            )
-        }
+        MarvelSectionView(CharacterFilter(eventId: event.id), title: "Characters", itemWidth: 200)
     }
     
     var seriesSection: some View {
-        MarvelSectionView<SeriesInfoRequest>(SeriesFilter(eventId: event.id), title: "Series") { series in
-            AnyView(
-                CardView2(title: series.title, description: series.description_)
-                .frame(width: 200)
-            )
-        }
+        MarvelSectionView(SeriesFilter(eventId: event.id), title: "Series", rowCount: 2)
     }
     
     var comicsSection: some View {
-        MarvelSectionView<ComicInfoRequest>(ComicFilter(eventId: event.id), title: "Comics") { comic in
-            AnyView(
-                CardView2(title: comic.title, description: comic.description_)
-                .frame(width: 200)
-            )
-        }
+        MarvelSectionView(ComicFilter(eventId: event.id), title: "Comics", itemWidth: 200)
     }
     
     var storiesSection: some View {
-        MarvelSectionView<StoryInfoRequest>(StoryFilter(eventId: event.id), title: "Stories") { story in
-            AnyView(
-                CardView2(title: story.title, description: story.description_)
-                .frame(width: 200)
-            )
-        }
+        MarvelSectionView(StoryFilter(eventId: event.id), title: "Stories", showsSeeAll: false, itemHeight: 300)
     }
     
     var creatorsSection: some View {
-        MarvelSectionView<CreatorInfoRequest>(CreatorFilter(eventId: event.id), title: "Creators") { creator in
-            AnyView(
-                CardView7(name: creator.fullName)
-            )
-        }
+        MarvelSectionView(CreatorFilter(eventId: event.id), title: "Creators", showsSeeAll: false)
     }
 }
 

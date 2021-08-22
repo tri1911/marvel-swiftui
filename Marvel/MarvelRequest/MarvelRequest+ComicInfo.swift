@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct ComicInfo: Codable, Hashable, Identifiable {
+struct ComicInfo: Codable, Identifiable, Hashable {
     let id: Int // The unique ID of the comic resource
     let title: String // The canonical title of the comic
     let description: String? // The preferred description of the comic
@@ -26,7 +26,7 @@ struct ComicInfo: Codable, Hashable, Identifiable {
     var modified_: String {
         let date = ISO8601DateFormatter().date(from: modified) ?? Date()
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MM-dd-yyyy"
+        dateFormatter.dateFormat = "MMMM dd"
         return dateFormatter.string(from: date)
     }
     
@@ -34,7 +34,9 @@ struct ComicInfo: Codable, Hashable, Identifiable {
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
-struct ComicFilter: Hashable {
+struct ComicFilter: MarvelFilter {
+    typealias Request = ComicInfoRequest
+    typealias CardView = ComicCardView
     var format: String?
     var formatType: String?
     var dateDescriptor: String?

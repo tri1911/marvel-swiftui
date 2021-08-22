@@ -53,42 +53,19 @@ struct CharacterDetailsView: View {
     }
     
     var comicsSection: some View {
-        MarvelSectionView<ComicInfoRequest>(ComicFilter(characterId: character.id), title: "Comics") {
-            comic in
-            AnyView (
-                CardView2(title: comic.title, description: comic.description_)
-                    .frame(width: CharacterDetailsView.thumbnailSize.width)
-            )
-        }
+        MarvelSectionView(ComicFilter(characterId: character.id), title: "Comics", itemWidth: CharacterDetailsView.thumbnailSize.width)
     }
     
     var seriesSection: some View {
-        MarvelSectionView<SeriesInfoRequest>(SeriesFilter(characterId: character.id), title: "Series") {
-            series in
-            AnyView (
-                CardView2(title: series.title, description: series.description_)
-                    .frame(width: CharacterDetailsView.thumbnailSize.width)
-            )
-        }
+        MarvelSectionView(SeriesFilter(characterId: character.id), title: "Series", rowCount: 2)
     }
     
     var eventsSection: some View {
-        MarvelSectionView<EventInfoRequest>(EventFilter(characterId: character.id), title: "Events") {
-            event in
-            AnyView (
-                CardView2(title: event.title, description: event.description_)
-                    .frame(width: CharacterDetailsView.thumbnailSize.width)
-            )
-        }
+        MarvelSectionView(EventFilter(characterId: character.id), title: "Events", rowCount: 3)
     }
     
     var storiesSection: some View {
-        MarvelSectionView<StoryInfoRequest>(StoryFilter(characterId: character.id), title: "Stories") {
-            story in
-            AnyView (CardView2(title: story.title, description: story.description_)
-                    .frame(width: CharacterDetailsView.thumbnailSize.width)
-            )
-        }
+        MarvelSectionView(StoryFilter(characterId: character.id), title: "Stories", showsSeeAll: false, itemHeight: 300)
     }
 }
 
