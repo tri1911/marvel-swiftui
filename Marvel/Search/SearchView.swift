@@ -26,7 +26,7 @@ struct SearchResultsView: View {
     
     var body: some View {
         if searchStore.searchText.isEmpty {
-            Text("Default View")
+            DefaultSearchResultsView()
         } else {
             switch scopeSearch {
             case .characters:

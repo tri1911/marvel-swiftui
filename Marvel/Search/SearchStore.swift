@@ -70,7 +70,6 @@ class SearchStore: ObservableObject {
             // Subscribe to the subject (named as results) in the request class
             // Assign the returned results to characters store
             marvelResultCancellable = characterRequest.results.sink { [weak self] results in
-                print("Return \(results.count) characters")
                 self?.characters = results
             }
             characters = nil
@@ -87,7 +86,6 @@ class SearchStore: ObservableObject {
             // Assign the returned results to comics store
             marvelResultCancellable = comicRequest.results.sink { [weak self] results in
                 self?.comics = results
-                print("Return \(results.count) comics")
             }
             comics = nil
         default:

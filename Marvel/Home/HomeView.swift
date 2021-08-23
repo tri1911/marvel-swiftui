@@ -21,7 +21,7 @@ struct HomeView: View {
                     VStack {
                         Divider().padding(.horizontal)
                         StandardHeaderView<AnyView>(title: "Categories").padding(.horizontal)
-                        StandardSectionView(Category.allCases.map { $0.rawValue.capitalized }, id: \.self) {
+                        StandardSectionView(Category.categories, id: \.self) {
                             CategoryCardView(category: $0)
                         }
                     }
@@ -50,8 +50,11 @@ struct HomeView: View {
     }
 }
 
-enum Category: String, CaseIterable {
+enum Category: String, CaseIterable, Identifiable {
     case characters, comics, events, series, stories, creators
+    var id: Category { self }
+    var title: String { self.rawValue.capitalized }
+    static var categories: [String] { Category.allCases.map { $0.rawValue.capitalized } }
 }
 
 struct HomeView_Previews: PreviewProvider {

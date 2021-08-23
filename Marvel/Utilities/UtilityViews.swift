@@ -452,31 +452,30 @@ struct CardView5: View {
 
 // MARK: - Default Search Result View (Categories)
 
-//struct DefaultSearchResultView: View {
-//    var body: some View {
-//        ScrollView(showsIndicators: false) {
-//            VStack(alignment: .leading, spacing: 10) {
-//                Divider().padding(.horizontal)
-//
-//                StandardHeaderView(title: "Categories Browse", showSubtitle: false, showSeeAll: false, destination: Text("Destination"))
-//                    .padding(.horizontal)
-//
-//                StandardGridView {
-//                    GeometryReader { geometry in
-//                        Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
-//                            .overlay(text, alignment: .bottomLeading)
-//                    }
-//                    .aspectRatio(1.5, contentMode: .fill)
-//                }
-//                .padding(.horizontal)
-//            }
-//        }
-//    }
-//
-//    var text: some View {
-//        Text("Soobin")
-//            .font(.system(size: 15, weight: .medium))
-//            .foregroundColor(.white)
-//            .padding(5)
-//    }
-//}
+struct DefaultSearchResultsView: View {
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 10) {
+                Divider().padding(.horizontal)
+                StandardHeaderView<AnyView>(title: "Search Categories").padding(.horizontal)
+                    .padding(.horizontal)
+
+                StandardGridView(items: Category.allCases) { category in
+                    GeometryReader { geometry in
+                        Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
+                            .overlay(text, alignment: .bottomLeading)
+                    }
+                    .aspectRatio(1.5, contentMode: .fill)
+                }
+                .padding(.horizontal)
+            }
+        }
+    }
+
+    var text: some View {
+        Text("Soobin")
+            .font(.system(size: 15, weight: .medium))
+            .foregroundColor(.white)
+            .padding(5)
+    }
+}
