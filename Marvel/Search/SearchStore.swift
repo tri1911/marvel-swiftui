@@ -22,7 +22,8 @@ class SearchStore: ObservableObject {
     
     // Enum represents the scope search.
     enum ScopeSearch: Int, CaseIterable {
-        case characters = 0
+        case all = 0
+        case characters
         case comics
         // Syntactic Sugar
         var title: String { "\(self)".capitalized }
@@ -47,10 +48,14 @@ class SearchStore: ObservableObject {
     
     // MARK: - Searching
     
+    // TODO: Consider Dictionary containing stores, requests
+    
     // Marvel requests
     private var characterRequest: CharacterInfoRequest!
     private var comicRequest: ComicInfoRequest!
+    
     private var marvelResultCancellable: AnyCancellable?
+    private var cancellables = [AnyCancellable]()
     
     // Marvel Results Stores
     @Published var characters: [CharacterInfo]?
@@ -58,6 +63,42 @@ class SearchStore: ObservableObject {
     
     private func search(_ query: String) {
         switch scopeSearch {
+        case .all:
+            // Stop subscribing to all requests
+            cancellables.removeAll()
+            
+            // Stop fetching
+            characterRequest?.stopFetching()
+            comicRequest?.stopFetching()
+            characterRequest = nil
+            comicRequest = nil
+            
+            // Create new requests based on the 'query' parameter
+            characterRequest = CharacterInfoRequest(CharacterFilter(nameStartsWith: query))
+            comicRequest = ComicInfoRequest(ComicFilter(titleStartsWith: query))
+            
+            // Start fetching
+            characterRequest?.fetch(useCache: false)
+            comicRequest?.fetch(useCache: false)
+            
+            // Subscribe to requests
+            characterRequest.results
+                .sink { [weak self] results in
+                    print("Return \(results.count) Characters")
+                    self?.characters = results
+                }
+                .store(in: &cancellables)
+            
+            comicRequest.results
+                .sink { [weak self] results in
+                    print("Return \(results.count) Comics")
+                    self?.comics = results
+                }
+                .store(in: &cancellables)
+            
+            // Reset stores to nil
+            characters = nil
+            comics = nil
         case .characters:
             // Cancel the most recent fetching (if it does exist)
             marvelResultCancellable = nil

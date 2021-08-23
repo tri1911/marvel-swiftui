@@ -14,6 +14,7 @@ struct SearchView: View {
         UINavigationControllerRepresentation(selectedScope: $searchStore.selectedScope, searchText: $searchStore.searchText, scopeSearch: SearchStore.ScopeSearch.titles) {
             SearchResultsView(selectedScope: $searchStore.selectedScope, searchText: $searchStore.searchText).environmentObject(searchStore)
         }
+        .ignoresSafeArea()
     }
 }
 
@@ -25,10 +26,12 @@ struct SearchResultsView: View {
     var scopeSearch: SearchStore.ScopeSearch? { SearchStore.ScopeSearch(rawValue: selectedScope) }
     
     var body: some View {
-        if searchStore.searchText.isEmpty {
+        if searchText.isEmpty {
             DefaultSearchResultsView()
         } else {
             switch scopeSearch {
+            case .all:
+                searchAllResults
             case .characters:
                 characterSearchResults
             case .comics:
@@ -36,6 +39,31 @@ struct SearchResultsView: View {
             default:
                 EmptyView()
             }
+        }
+    }
+    
+    @ViewBuilder
+    var searchAllResults: some View {
+        if let characters = searchStore.characters, let comics = searchStore.comics {
+            if characters.isEmpty && comics.isEmpty {
+                Text("Empty Results")
+            } else {
+                List {
+                    Section(header: Text("Characters")) {
+                        ForEach(characters) { character in
+                            Text(character.name)
+                        }
+                    }
+                    
+                    Section(header: Text("Comics")) {
+                        ForEach(comics) { comic in
+                            Text(comic.title)
+                        }
+                    }
+                }
+            }
+        } else {
+            LoadingView()
         }
     }
     
@@ -52,7 +80,7 @@ struct SearchResultsView: View {
                 }  
             }
         } else {
-            ProgressView().scaleEffect(1.5)
+            LoadingView()
         }
     }
     
@@ -69,7 +97,7 @@ struct SearchResultsView: View {
                 }
             }
         } else {
-            ProgressView().scaleEffect(1.5)
+            LoadingView()
         }
     }
 }

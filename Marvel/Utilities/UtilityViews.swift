@@ -30,6 +30,9 @@ protocol InfoRequest {
 }
 
 extension InfoRequest {
+    // A shared function that creates and saves a request class based on a specified filter.
+    // If the request does not exist, we create a new request and save it into `requests` for the next reference.
+    // Otherwise, it just returns the saved request (in `requests` dictionary)
     static func create(_ filter: Filter, limit: Int? = nil) -> Self {
         if let request = requests[filter] {
             return request
@@ -477,5 +480,21 @@ struct DefaultSearchResultsView: View {
             .font(.system(size: 15, weight: .medium))
             .foregroundColor(.white)
             .padding(5)
+    }
+}
+
+struct LoadingView: View {
+    var body: some View {
+        ZStack {
+            VStack(spacing: 20) {
+                ProgressView()
+                    .scaleEffect(2)
+                Text("Loading")
+                    .font(.system(size: 25, weight: .medium, design: .rounded))
+            }
+            Color.primary.opacity(0.05)
+        }
+        .frame(width: 150, height: 150)
+        .cornerRadius(15.0)
     }
 }
