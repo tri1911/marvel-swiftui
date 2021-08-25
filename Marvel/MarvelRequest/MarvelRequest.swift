@@ -23,6 +23,7 @@ class MarvelRequest<Filter, Info> where Info: Codable {
     private(set) var offset = 0
     
     init(_ filter: Filter, limit: Int? = nil) {
+        print("Created a new request")
         self.filter = filter
         if limit != nil { self.limit = limit! }
     }

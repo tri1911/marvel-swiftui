@@ -40,7 +40,7 @@ struct CreatorFilter: MarvelFilter {
     var middleName: String?
     var lastName: String?
     var suffix: String?
-    var nameStartsWith: String?
+    var nameStartsWith: String? // Searching parameter
     var firstNameStartsWith: String?
     var middleNameStartsWith: String?
     var lastNameStartsWith: String?

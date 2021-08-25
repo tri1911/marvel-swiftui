@@ -6,98 +6,80 @@
 //
 
 import SwiftUI
+import Combine
+import CoreData
+
+class SearchStore: ObservableObject {
+    @Published var searchText = ""
+    @Published var selectedScope = 0
+    
+    // Enum represents the scope search.
+    enum ScopeSearch: Int, CaseIterable {
+        case all = 0
+        case favourites
+        // Syntactic Sugar
+        var title: String { "\(self)".capitalized }
+        static var titles: [String] { Self.allCases.map { $0.title } }
+    }
+}
 
 struct SearchView: View {
-    @StateObject var searchStore = SearchStore()
+    @StateObject var store = SearchStore()
     
     var body: some View {
-        UINavigationControllerRepresentation(selectedScope: $searchStore.selectedScope, searchText: $searchStore.searchText, scopeSearch: SearchStore.ScopeSearch.titles) {
-            SearchResultsView(selectedScope: $searchStore.selectedScope, searchText: $searchStore.searchText).environmentObject(searchStore)
+        UINavigationControllerRepresentation(
+            selectedScope: $store.selectedScope,
+            searchText: $store.searchText,
+            scopeSearch: SearchStore.ScopeSearch.titles
+        ) {
+            SearchResultsView(store: store)
         }
         .ignoresSafeArea()
     }
 }
 
 struct SearchResultsView: View {
-    @EnvironmentObject var searchStore: SearchStore
-    @Binding var selectedScope: Int
-    @Binding var searchText: String
+    @Environment(\.managedObjectContext) var context: NSManagedObjectContext
+    
+    // Did not use @ObservedObject to avoid the body recreated every time the searchText property get changed
+    var store: SearchStore
+    
+    @State var query = ""
+    @State var selectedScope = 0
     
     var scopeSearch: SearchStore.ScopeSearch? { SearchStore.ScopeSearch(rawValue: selectedScope) }
     
     var body: some View {
-        if searchText.isEmpty {
-            DefaultSearchResultsView()
-        } else {
-            switch scopeSearch {
-            case .all:
-                searchAllResults
-            case .characters:
-                characterSearchResults
-            case .comics:
-                comicSearchResults
-            default:
-                EmptyView()
-            }
-        }
-    }
-    
-    @ViewBuilder
-    var searchAllResults: some View {
-        if let characters = searchStore.characters, let comics = searchStore.comics {
-            if characters.isEmpty && comics.isEmpty {
-                Text("Empty Results")
-            } else {
-                List {
-                    Section(header: Text("Characters")) {
-                        ForEach(characters) { character in
-                            Text(character.name)
-                        }
-                    }
-                    
-                    Section(header: Text("Comics")) {
-                        ForEach(comics) { comic in
-                            Text(comic.title)
-                        }
+        ScrollView {
+            LazyVStack(spacing: 40) {
+                if query.isEmpty {
+                    DefaultSearchResultsView()
+                } else {
+                    switch scopeSearch {
+                    case .all:
+                        MarvelSectionView(CharacterFilter(nameStartsWith: query), saveRequest: false, title: "Characters", rowCount: 2, itemWidth: 165)
+                        MarvelSectionView(ComicFilter(titleStartsWith: query), saveRequest: false, title: "Comics", itemWidth: 250)
+                        MarvelSectionView(EventFilter(nameStartsWith: query), saveRequest: false, title: "Events", rowCount: 3)
+                        MarvelSectionView(SeriesFilter(titleStartsWith: query), saveRequest: false, title: "Series", rowCount: 2, verticalDirection: true)
+                        // MarvelSectionView(CreatorFilter(nameStartsWith: query), saveRequest: false, title: "Creators", showsSeeAll: false)
+                    default:
+                        EmptyView()
                     }
                 }
             }
-        } else {
-            LoadingView()
-        }
-    }
-    
-    @ViewBuilder
-    var characterSearchResults: some View {
-        if let characters = searchStore.characters {
-            if characters.isEmpty {
-                Text("Empty")
-            } else {
-                List {
-                    ForEach(characters) { character in
-                        Text(character.name)
-                    }
-                }  
+            .onReceive(store.$selectedScope) { selected in
+                self.selectedScope = selected
             }
-        } else {
-            LoadingView()
-        }
-    }
-    
-    @ViewBuilder
-    var comicSearchResults: some View {
-        if let comics = searchStore.comics {
-            if comics.isEmpty {
-                Text("Empty")
-            } else {
-                List {
-                    ForEach(comics) { comic in
-                        Text(comic.title)
-                    }
+            .onReceive(
+                store.$searchText
+                    .removeDuplicates()
+                    .debounce(for: .seconds(0.5), scheduler: RunLoop.main)
+            ) { searchText in
+                if searchText != query {
+                    print("Published searchText: \(searchText)")
+                    query = searchText
                 }
             }
-        } else {
-            LoadingView()
         }
     }
 }

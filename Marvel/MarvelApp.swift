@@ -9,9 +9,12 @@ import SwiftUI
 
 @main
 struct MarvelApp: App {
+    let persistentController = PersistentController.shared
+    
     var body: some Scene {
         WindowGroup {
-            SearchView()
+            ContentView()
+                .environment(\.managedObjectContext, persistentController.container.viewContext)
         }
     }
 }

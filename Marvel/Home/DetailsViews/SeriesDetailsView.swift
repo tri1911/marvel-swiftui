@@ -13,17 +13,11 @@ struct SeriesDetailsView: View {
     var body: some View {
         ScrollView {
             VStack {
-                // Main information
                 mainInfo
-                // Comics
                 comicsSection
-                // Characters
                 charactersSection
-                // Stories
                 storiesSection
-                // Events
                 eventsSection
-                // Creators
                 creatorsSection
             }
         }

@@ -45,7 +45,7 @@ struct EventFilter: MarvelFilter {
     typealias Request = EventInfoRequest
     typealias CardView = EventCardView
     var name: String?
-    var nameStartsWith: String?
+    var nameStartsWith: String? // Searching parameter
     var modifiedSince: String?
     var creatorId: Int?
     var characterId: Int?

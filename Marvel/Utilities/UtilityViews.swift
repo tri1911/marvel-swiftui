@@ -23,7 +23,6 @@ protocol InfoRequest {
     associatedtype Info: Identifiable, Hashable
     
     static var requests: [Filter:Self] { get set }
-    static func create(_ filter: Filter, limit: Int?) -> Self
     var results: CurrentValueSubject<[Info], Never> { get }
     init(_ filter: Filter, limit: Int?)
     func fetch(useCache: Bool)
@@ -33,13 +32,14 @@ extension InfoRequest {
     // A shared function that creates and saves a request class based on a specified filter.
     // If the request does not exist, we create a new request and save it into `requests` for the next reference.
     // Otherwise, it just returns the saved request (in `requests` dictionary)
-    static func create(_ filter: Filter, limit: Int? = nil) -> Self {
+    static func create(_ filter: Filter, limit: Int? = nil, saveRequest: Bool) -> Self {
+        print("Go there...")
         if let request = requests[filter] {
             return request
         } else {
             let request = Self(filter, limit: limit)
             request.fetch(useCache: true)
-            requests[filter] = request
+            if saveRequest { requests[filter] = request }
             return request
         }
     }
@@ -47,9 +47,8 @@ extension InfoRequest {
 
 struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
     
-    // MARK: - Predicate
+    // MARK: - Request
     
-    let filter: Filter
     let request: Filter.Request
     
     // MARK: - Header
@@ -63,19 +62,19 @@ struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
     let rowCount: Int?
     let itemWidth: CGFloat?
     let itemHeight: CGFloat?
+    let verticalDirection: Bool
     
     @State private var infos = [Filter.Request.Info]()
     
-    init(_ filter: Filter, title: String, subtitle: String? = nil, showsSeeAll: Bool = true, rowCount: Int? = nil, itemWidth: CGFloat? = nil, itemHeight: CGFloat? = nil) {
-        self.filter = filter
-        self.request = Filter.Request.create(filter)
-
+    init(_ filter: Filter, saveRequest: Bool = true, title: String, subtitle: String? = nil, showsSeeAll: Bool = true, rowCount: Int? = nil, itemWidth: CGFloat? = nil, itemHeight: CGFloat? = nil, verticalDirection: Bool = false) {
+        self.request = Filter.Request.create(filter, saveRequest: saveRequest)
         self.title = title
         self.subtitle = subtitle
         self.showsSeeAll = showsSeeAll
         self.rowCount = rowCount
         self.itemWidth = itemWidth
         self.itemHeight = itemHeight
+        self.verticalDirection = verticalDirection
     }
     
     var body: some View {
@@ -85,21 +84,35 @@ struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
             StandardHeaderView(title: title, subtitle: subtitle, seeAllDestination: showsSeeAll && !infos.isEmpty ? seeAllDestination : nil)
                 .padding(.horizontal)
             
-            if let rowCount = rowCount {
-                StandardSectionView(infos.dividesToGroup(of: rowCount), id: \.self) { group in
-                    VStack(alignment: .leading, spacing: 15) {
-                        ForEach(group) { info in
-                            Filter.CardView(info)
-                            if let index = group.firstIndex { $0.id == info.id }, index != group.count - 1 {
-                                Divider()
-                            }
+            if verticalDirection {
+                VStack {
+                    ForEach(infos) { info in
+                        Filter.CardView(info)
+                            .frame(width: itemWidth, height: itemHeight)
+                        if let index = infos.firstIndex { $0.id == info.id }, index != infos.count - 1 {
+                            Divider()
                         }
                     }
                 }
+                .buttonStyle(PlainButtonStyle())
             } else {
-                StandardSectionView(infos) { info in
-                    Filter.CardView(info)
-                        .frame(width: itemWidth, height: itemHeight)
+                if let rowCount = rowCount {
+                    StandardSectionView(infos.dividesToGroup(of: rowCount), id: \.self) { group in
+                        VStack(alignment: .leading, spacing: 15) {
+                            ForEach(group) { info in
+                                Filter.CardView(info)
+                                    .frame(width: itemWidth, height: itemHeight)
+                                if let index = group.firstIndex { $0.id == info.id }, index != group.count - 1 {
+                                    Divider()
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    StandardSectionView(infos) { info in
+                        Filter.CardView(info)
+                            .frame(width: itemWidth, height: itemHeight)
+                    }
                 }
             }
         }
@@ -110,8 +123,9 @@ struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
     
     @ViewBuilder
     var seeAllDestination: some View {
-        if rowCount != nil {
-            List { ForEach(infos) { Filter.CardView($0).padding()} }
+        let cardType = Filter.CardView.self
+        if (cardType == EventCardView.self) || (cardType == SeriesCardView.self) {
+            List { ForEach(infos) { Filter.CardView($0).padding() } }
         } else {
             ScrollView {
                 StandardGridView(items: infos) { Filter.CardView($0) }.padding()
@@ -211,10 +225,12 @@ extension StandardSectionView where Item: Identifiable, Item.ID == ID {
 }
 
 struct StandardGridView<Item, ItemView>: View where Item: Identifiable, ItemView: View {
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 2)
     
     var items: [Item]
+    var columnsCount = 2
     @ViewBuilder var viewForItem: (Item) -> ItemView
+    
+    var columns: [GridItem] { Array(repeating: GridItem(.flexible(), spacing: 10), count: columnsCount) }
     
     var body: some View {
         LazyVGrid(columns: columns, spacing: 20) {
@@ -457,21 +473,19 @@ struct CardView5: View {
 
 struct DefaultSearchResultsView: View {
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 10) {
-                Divider().padding(.horizontal)
-                StandardHeaderView<AnyView>(title: "Search Categories").padding(.horizontal)
-                    .padding(.horizontal)
-
-                StandardGridView(items: Category.allCases) { category in
-                    GeometryReader { geometry in
-                        Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
-                            .overlay(text, alignment: .bottomLeading)
-                    }
-                    .aspectRatio(1.5, contentMode: .fill)
-                }
+        VStack(alignment: .leading, spacing: 10) {
+            Divider().padding(.horizontal)
+            StandardHeaderView<AnyView>(title: "Search Categories").padding(.horizontal)
                 .padding(.horizontal)
+            
+            StandardGridView(items: Category.allCases) { category in
+                GeometryReader { geometry in
+                    Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
+                        .overlay(text, alignment: .bottomLeading)
+                }
+                .aspectRatio(1.5, contentMode: .fill)
             }
+            .padding(.horizontal)
         }
     }
 

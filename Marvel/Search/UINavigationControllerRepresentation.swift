@@ -31,6 +31,7 @@ struct UINavigationControllerRepresentation<Content>: UIViewControllerRepresenta
         
         // Use the coordinator to forward delegate messages from the search bar to SwiftUI.
         searchController.searchBar.delegate = context.coordinator
+        searchController.searchBar.placeholder = "Characters, Comics, Series, and More"
         
         // UIKit's Navigation Controller
         let navigationController = UINavigationController(rootViewController: rootViewController)

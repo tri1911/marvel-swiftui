@@ -46,7 +46,7 @@ struct SeriesFilter: MarvelFilter {
     typealias Request = SeriesInfoRequest
     typealias CardView = SeriesCardView
     var title: String?
-    var titleStartsWith: String?
+    var titleStartsWith: String? // Searching parameter
     var startYear: Int?
     var modifiedSince: String?
     var comicId: Int?
