@@ -77,7 +77,7 @@ struct SearchResultsView: View {
             ) { searchText in
                 if searchText != query {
                     print("Published searchText: \(searchText)")
-                    query = searchText
+                    query = searchText.replacingOccurrences(of: " ", with: "%20")
                 }
             }
         }

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import CoreData
 
 protocol MarvelCardView: View {
     associatedtype Info
@@ -125,10 +126,14 @@ struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
     var seeAllDestination: some View {
         let cardType = Filter.CardView.self
         if (cardType == EventCardView.self) || (cardType == SeriesCardView.self) {
-            List { ForEach(infos) { Filter.CardView($0).padding() } }
+            ScrollView {
+                StandardVerticalStackView(items: infos) { info in
+                    Filter.CardView(info)
+                }
+            }
         } else {
             ScrollView {
-                StandardGridView(items: infos) { Filter.CardView($0) }.padding()
+                StandardGridView(items: infos) { Filter.CardView($0) }
             }
         }
     }
@@ -171,7 +176,6 @@ struct StandardHeaderView<Destination>: View where Destination: View {
             
             if let destination = seeAllDestination {
                 NavigationLink(destination: destination
-                                .buttonStyle(PlainButtonStyle())
                                 .navigationTitle(title)
                                 .navigationBarTitleDisplayMode(.inline)
                 ) {
@@ -225,7 +229,6 @@ extension StandardSectionView where Item: Identifiable, Item.ID == ID {
 }
 
 struct StandardGridView<Item, ItemView>: View where Item: Identifiable, ItemView: View {
-    
     var items: [Item]
     var columnsCount = 2
     @ViewBuilder var viewForItem: (Item) -> ItemView
@@ -238,71 +241,159 @@ struct StandardGridView<Item, ItemView>: View where Item: Identifiable, ItemView
                 viewForItem(item)
             }
         }
+        .buttonStyle(PlainButtonStyle())
+        .padding()
+    }
+}
+
+struct StandardVerticalStackView<Item, ItemView>: View where Item: Identifiable, ItemView: View {
+    var items: [Item]
+    @ViewBuilder var viewForItem: (Item) -> ItemView
+    
+    var body: some View {
+        VStack {
+            ForEach(items) { item in
+                viewForItem(item)
+                if let index = items.firstIndex { $0.id == item.id }, index != items.count - 1 {
+                    Divider()
+                }
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
+        .padding(.vertical)
     }
 }
 
 // MARK: - Card View(s)
 
 struct CharacterCardView: MarvelCardView {
-    let character: CharacterInfo
+    @Environment(\.managedObjectContext) var context: NSManagedObjectContext
+    let characterInfo: CharacterInfo
     
     init(_ info: CharacterInfo) {
-        self.character = info
+        self.characterInfo = info
     }
     
+    // Property used to indicate the favourite status
+    @State private var isFavourited = false
+    
     var body: some View {
-        NavigationLink(destination: CharacterDetailsView(character: character)) {
-            VStack(alignment: .leading, spacing: 10) {
-                GeometryReader { geometry in
-                    Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
+        ZStack(alignment: .topTrailing) {
+            NavigationLink(destination: CharacterDetailsView(character: characterInfo)) {
+                VStack(alignment: .leading, spacing: 10) {
+                    GeometryReader { geometry in
+                        Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(characterInfo.modified_.uppercased())
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.gray)
+                        Text(characterInfo.name)
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .lineLimit(1)
+                        Text(characterInfo.description.isEmpty ? "Get hooked on a hearty helping of heroes and villains from the humble House of Ideas!" : characterInfo.description) // description_?????
+                            .font(.footnote)
+                            .foregroundColor(.gray)
+                            .lineLimit(2)
+                    }
                 }
-                
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(character.modified_.uppercased())
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.gray)
-                    Text(character.name)
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .lineLimit(1)
-                    Text(character.description.isEmpty ? "Get hooked on a hearty helping of heroes and villains from the humble House of Ideas!" : character.description) // description_?????
-                        .font(.footnote)
-                        .foregroundColor(.gray)
-                        .lineLimit(2)
+                .aspectRatio(0.75, contentMode: .fit)
+                .onAppear { // Every time the card view appear, it will check whether it is favourited or not.
+                    isFavourited = Character.contains(characterInfo, in: context)
                 }
             }
-            .aspectRatio(0.75, contentMode: .fit)
+            favourite
+        }
+    }
+    
+    var favourite: some View {
+        Button {
+            if isFavourited {
+                context.perform {
+                    withAnimation {
+                        Character.delete(characterInfo, in: context) // Delete from favourite list
+                    }
+                }
+            } else {
+                context.perform {
+                    withAnimation {
+                        Character.update(from: characterInfo, in: context) // Add to favourite list
+                    }
+                }
+            }
+            isFavourited.toggle() // Reflex the change
+        } label: {
+            Image(systemName: isFavourited ? "heart.fill" : "heart")
+                .imageScale(.large)
+                .foregroundColor(.red)
+                .padding(10)
         }
     }
 }
 
 struct ComicCardView: MarvelCardView {
-    let comic: ComicInfo
+    @Environment(\.managedObjectContext) var context: NSManagedObjectContext
+    let comicInfo: ComicInfo
     
     init(_ info: ComicInfo) {
-        self.comic = info
+        self.comicInfo = info
     }
     
+    // Property used to indicate the favourite status
+    @State private var isFavourited = false
+    
     var body: some View {
-        NavigationLink(destination: ComicDetailsView(comic: comic)) {
-            VStack(alignment: .leading, spacing: 10) {
-                GeometryReader { geometry in
-                    Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
+        ZStack(alignment: .topTrailing) {
+            NavigationLink(destination: ComicDetailsView(comic: comicInfo)) {
+                VStack(alignment: .leading, spacing: 10) {
+                    GeometryReader { geometry in
+                        Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(comicInfo.modified_.uppercased())
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.gray)
+                        Text(comicInfo.title)
+                            .font(.system(size: 15, weight: .semibold, design: .rounded))
+                            .lineLimit(1)
+                        Text(comicInfo.description_)
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .lineLimit(2)
+                    }
                 }
-                
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(comic.modified_.uppercased())
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.gray)
-                    Text(comic.title)
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .lineLimit(1)
-                    Text(comic.description_)
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                        .lineLimit(2)
+                .aspectRatio(0.75, contentMode: .fit)
+                .onAppear { // Update favourite status
+                    isFavourited = Comic.contains(comicInfo, in: context)
                 }
             }
-            .aspectRatio(0.75, contentMode: .fit)
+            favourite // Favourite Button
+        }
+    }
+    
+    var favourite: some View {
+        Button {
+            if isFavourited {
+                context.perform {
+                    withAnimation {
+                        Comic.delete(comicInfo, in: context) // Delete from favourite list
+                    }
+                }
+            } else {
+                context.perform {
+                    withAnimation {
+                        Comic.update(from: comicInfo, in: context) // Add to favourite list
+                    }
+                }
+            }
+            isFavourited.toggle() // Reflex the change
+        } label: {
+            Image(systemName: isFavourited ? "heart.fill" : "heart")
+                .imageScale(.large)
+                .foregroundColor(.red)
+                .padding(10)
         }
     }
 }
@@ -341,40 +432,74 @@ struct EventCardView: MarvelCardView {
 }
 
 struct SeriesCardView: MarvelCardView {
-    let series: SeriesInfo
+    @Environment(\.managedObjectContext) var context: NSManagedObjectContext
+    let seriesInfo: SeriesInfo
     
     init(_ info: SeriesInfo) {
-        self.series = info
+        self.seriesInfo = info
     }
     
+    // Property used to indicate the favourite status
+    @State private var isFavourited = false
+    
     var body: some View {
-        NavigationLink(destination: SeriesDetailsView(series: series)) {
-            HStack(alignment: .top) {
-                Image.soobinThumbnail(width: 100, height: 100)
-                VStack(alignment: .leading) {
-                    Text(series.modified_.uppercased())
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.gray)
-                    Spacer()
-                    Text(series.title)
-                        .font(.callout)
-                        .fontWeight(.medium)
-                        .lineLimit(/*@START_MENU_TOKEN@*/2/*@END_MENU_TOKEN@*/)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Spacer()
-                    HStack {
-                        Text("Series")
-                        Image(systemName: "circlebadge.fill").font(.system(size: 5))
-                        Text(verbatim: "\(series.startYear)")
-                        Image(systemName: "circlebadge.fill").font(.system(size: 5))
-                        Text("\(series.rating.isEmpty ? "90%" : series.rating) Rating")
+        ZStack(alignment: .topTrailing) {
+            NavigationLink(destination: SeriesDetailsView(series: seriesInfo)) {
+                HStack(alignment: .top) {
+                    Image.soobinThumbnail(width: 100, height: 100)
+                    VStack(alignment: .leading) {
+                        Text(seriesInfo.modified_.uppercased())
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.gray)
+                        Spacer()
+                        Text(seriesInfo.title)
+                            .font(.callout)
+                            .fontWeight(.medium)
+                            .lineLimit(/*@START_MENU_TOKEN@*/2/*@END_MENU_TOKEN@*/)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer()
+                        HStack {
+                            Text("Series")
+                            Image(systemName: "circlebadge.fill").font(.system(size: 5))
+                            Text(verbatim: "\(seriesInfo.startYear)")
+                            Image(systemName: "circlebadge.fill").font(.system(size: 5))
+                            Text("\(seriesInfo.rating.isEmpty ? "90%" : seriesInfo.rating) Rating")
+                        }
+                        .font(.caption)
+                        .foregroundColor(.purple)
                     }
-                    .font(.caption)
-                    .foregroundColor(.purple)
+                    Spacer()
                 }
-                Spacer()
+                .frame(width: UIScreen.main.bounds.width * 0.9, height: 110)
+                .onAppear { // Update favourite status
+                    isFavourited = Series.contains(seriesInfo, in: context)
+                }
             }
-            .frame(width: UIScreen.main.bounds.width * 0.9, height: 110)
+            favourite // Favourite Button
+        }
+    }
+    
+    var favourite: some View {
+        Button {
+            if isFavourited {
+                context.perform {
+                    withAnimation {
+                        Series.delete(seriesInfo, in: context) // Delete from favourite list
+                    }
+                }
+            } else {
+                context.perform {
+                    withAnimation {
+                        Series.update(from: seriesInfo, in: context) // Add to favourite list
+                    }
+                }
+            }
+            isFavourited.toggle() // Reflex the change
+        } label: {
+            Image(systemName: isFavourited ? "heart.fill" : "heart")
+                .imageScale(.large)
+                .foregroundColor(.red)
+                .padding(10)
         }
     }
 }
@@ -485,10 +610,9 @@ struct DefaultSearchResultsView: View {
                 }
                 .aspectRatio(1.5, contentMode: .fill)
             }
-            .padding(.horizontal)
         }
     }
-
+    
     var text: some View {
         Text("Soobin")
             .font(.system(size: 15, weight: .medium))
