@@ -33,7 +33,7 @@ extension InfoRequest {
     // A shared function that creates and saves a request class based on a specified filter.
     // If the request does not exist, we create a new request and save it into `requests` for the next reference.
     // Otherwise, it just returns the saved request (in `requests` dictionary)
-    static func create(_ filter: Filter, limit: Int? = nil, saveRequest: Bool) -> Self {
+    static func create(_ filter: Filter, limit: Int? = nil, saveRequest: Bool = true) -> Self {
         print("Go there...")
         if let request = requests[filter] {
             return request
@@ -54,7 +54,7 @@ struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
     
     // MARK: - Header
     
-    let title: String
+    let title: String?
     let subtitle: String?
     let showsSeeAll: Bool
     
@@ -67,7 +67,7 @@ struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
     
     @State private var infos = [Filter.Request.Info]()
     
-    init(_ filter: Filter, saveRequest: Bool = true, title: String, subtitle: String? = nil, showsSeeAll: Bool = true, rowCount: Int? = nil, itemWidth: CGFloat? = nil, itemHeight: CGFloat? = nil, verticalDirection: Bool = false) {
+    init(_ filter: Filter, saveRequest: Bool = true, title: String? = nil, subtitle: String? = nil, showsSeeAll: Bool = true, rowCount: Int? = nil, itemWidth: CGFloat? = nil, itemHeight: CGFloat? = nil, verticalDirection: Bool = false) {
         self.request = Filter.Request.create(filter, saveRequest: saveRequest)
         self.title = title
         self.subtitle = subtitle
@@ -86,16 +86,10 @@ struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
                 .padding(.horizontal)
             
             if verticalDirection {
-                VStack {
-                    ForEach(infos) { info in
-                        Filter.CardView(info)
-                            .frame(width: itemWidth, height: itemHeight)
-                        if let index = infos.firstIndex { $0.id == info.id }, index != infos.count - 1 {
-                            Divider()
-                        }
-                    }
+                StandardVerticalStackView(items: infos) { info in
+                    Filter.CardView(info)
+                        .frame(width: itemWidth, height: itemHeight)
                 }
-                .buttonStyle(PlainButtonStyle())
             } else {
                 if let rowCount = rowCount {
                     StandardSectionView(infos.dividesToGroup(of: rowCount), id: \.self) { group in
@@ -154,16 +148,18 @@ extension Image {
 // MARK: - Standard View(s)
 
 struct StandardHeaderView<Destination>: View where Destination: View {
-    var title: String
+    var title: String?
     var subtitle: String?
     var seeAllDestination: Destination?
     
     var body: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading) {
-                Text(title)
-                    .font(.title3)
-                    .fontWeight(.bold)
+                if let title = title {
+                    Text(title)
+                        .font(.title3)
+                        .fontWeight(.bold)
+                }
                 
                 if let subtitle = subtitle {
                     Text(subtitle)
@@ -174,7 +170,7 @@ struct StandardHeaderView<Destination>: View where Destination: View {
             
             Spacer()
             
-            if let destination = seeAllDestination {
+            if let title = title, let destination = seeAllDestination {
                 NavigationLink(destination: destination
                                 .navigationTitle(title)
                                 .navigationBarTitleDisplayMode(.inline)
@@ -548,8 +544,10 @@ struct CreatorCardView: MarvelCardView {
     var body: some View {
         NavigationLink(destination: CreatorDetailsView(creator: creator)) {
             VStack {
-                Image.soobinThumbnail(width: 100, height: 100).clipShape(Circle())
+                Image.soobinThumbnail(width: 100, height: 100)
+                    .clipShape(Circle())
                 Text(creator.fullName)
+                    .fontWeight(.medium)
             }
             .frame(maxWidth: 100)
         }
@@ -574,21 +572,92 @@ struct CategoryCardView: View {
     }
 }
 
-// Introduction Card on very top (Custom section view)
-struct CardView5: View {
+struct CategoriesSectionView: View {
+    @Binding var tabSelection: Int
+    
     var body: some View {
-        VStack(alignment: .leading) {
-            Divider()
-            Text("New Release".uppercased())
-                .font(.caption)
-                .fontWeight(.bold)
-                .foregroundColor(.purple)
-            Text("The Grand Scheme")
-                .font(.title2)
-            Text("Hosted by John Stamos.")
-                .font(.title3)
-                .foregroundColor(.gray)
-            Image.soobinThumbnail(width: UIScreen.main.bounds.width * 0.9, height: 150)
+        VStack {
+            Divider().padding(.horizontal)
+            StandardHeaderView<AnyView>(title: "Categories").padding(.horizontal)
+            StandardSectionView(Category.allCases) { category in
+                Group {
+                    if category == .comics {
+                        Button {
+                            tabSelection = 2
+                        } label: {
+                            CategoryCardView(category: category.rawValue.capitalized)
+                        }
+                    } else {
+                        NavigationLink(destination: category.destination) {
+                            CategoryCardView(category: category.rawValue.capitalized)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    enum Category: String, CaseIterable, Identifiable {
+        case characters, comics, events, series
+        
+        var id: String { self.rawValue }
+        
+        @ViewBuilder
+        var destination: some View {
+            switch self {
+            case .characters:
+                CharactersView()
+            case .events:
+                EventsView()
+            case .series:
+                SeriesView()
+            case .comics:
+                EmptyView()
+            }
+        }
+    }
+}
+
+struct FeaturedComicCardView: View {
+    let comic: ComicInfo
+    
+    var screenWidth: CGFloat { UIScreen.main.bounds.width }
+    
+    var body: some View {
+        NavigationLink(destination: ComicDetailsView(comic: comic)) {
+            VStack(alignment: .leading) {
+                Divider()
+                Text("New Release".uppercased())
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(.purple)
+                Text(comic.title)
+                    .font(.title2)
+                Text("Published by Marvel.")
+                    .font(.title3)
+                    .foregroundColor(.gray)
+                Image.soobinThumbnail(width: screenWidth * 0.9, height: 150)
+            }
+            .frame(maxWidth: screenWidth * 0.9)
+        }
+    }
+}
+
+struct FeaturedComicsView: View {
+    let request: ComicInfoRequest
+    
+    @State private var comics = [ComicInfo]()
+    
+    init(_ filter: ComicFilter) {
+        request = ComicInfoRequest.create(filter, limit: 10)
+    }
+    
+    var body: some View {
+        StandardSectionView(comics) { comic in
+            FeaturedComicCardView(comic: comic)
+        }
+        .onReceive(request.results) { results in
+            comics = results
         }
     }
 }
@@ -599,25 +668,27 @@ struct CardView5: View {
 struct DefaultSearchResultsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Divider().padding(.horizontal)
-            StandardHeaderView<AnyView>(title: "Search Categories").padding(.horizontal)
+            Divider()
                 .padding(.horizontal)
             
-            StandardGridView(items: Category.allCases) { category in
-                GeometryReader { geometry in
-                    Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
-                        .overlay(text, alignment: .bottomLeading)
+            StandardHeaderView<AnyView>(title: "Browse Categories")
+                .padding(.horizontal)
+            
+            StandardGridView(items: Array(ComicFilter.Format.allCases.dropFirst())) { format in
+                NavigationLink(destination: ComicByFormatView(format: format)) {
+                    ZStack(alignment: .bottomLeading) {
+                        RadialGradient(gradient: Gradient(colors: [.purple, .blue]), center: .topLeading, startRadius: 5, endRadius: 500)
+                        Text(format.title)
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.leading)
+                            .padding()
+                    }
+                    .cornerRadius(10.0)
+                    .aspectRatio(1.5, contentMode: .fit)
                 }
-                .aspectRatio(1.5, contentMode: .fill)
             }
         }
-    }
-    
-    var text: some View {
-        Text("Soobin")
-            .font(.system(size: 15, weight: .medium))
-            .foregroundColor(.white)
-            .padding(5)
     }
 }
 

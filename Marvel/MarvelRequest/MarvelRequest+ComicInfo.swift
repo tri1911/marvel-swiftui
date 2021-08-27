@@ -26,7 +26,7 @@ struct ComicInfo: Codable, Identifiable, Hashable {
     var modified_: String {
         let date = ISO8601DateFormatter().date(from: modified) ?? Date()
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMMM dd"
+        dateFormatter.dateFormat = "MMMM dd, YYYY"
         return dateFormatter.string(from: date)
     }
     
@@ -37,9 +37,9 @@ struct ComicInfo: Codable, Identifiable, Hashable {
 struct ComicFilter: MarvelFilter {
     typealias Request = ComicInfoRequest
     typealias CardView = ComicCardView
-    var format: String?
-    var formatType: String?
-    var dateDescriptor: String?
+    var format: Format?
+    var formatType: FormatType?
+    var dateDescriptor: DateDescriptor?
     var title: String?
     var titleStartsWith: String? // Searching parameter
     var startYear: Int?
@@ -51,6 +51,34 @@ struct ComicFilter: MarvelFilter {
     var eventId: Int?
     var storyId: Int?
     var orderBy: String?
+    
+    enum Format: String, CaseIterable, Identifiable {
+        case comic
+        case magazine
+        case tradePaperback = "trade%20paperback"
+        case hardcover
+        case digest
+        case graphicNovel = "graphic%20novel"
+        case digitalComic = "digital%20comic"
+        case infiniteComic = "infinite%20comic"
+        var id: String { self.rawValue }
+        var title: String { self.rawValue.capitalized.replacingOccurrences(of: "%20", with: " ") }
+    }
+    
+    enum FormatType: String, CaseIterable {
+        case comic, collection
+    }
+    
+    enum DateDescriptor: String {
+        case lastWeek, thisWeek, nextWeek, thisMonth
+    }
+    
+    enum OrderBy: String {
+        case focDate, _focDate = "-focDate"
+        case onsaleDate, _onsaleDate = "-onsaleDate"
+        case title, _title = "-title"
+        case issueNumber, _issueNumber = "-issueNumber"
+    }
 }
 
 final class ComicInfoRequest: MarvelRequest<ComicFilter, ComicInfo>, InfoRequest {
@@ -59,9 +87,9 @@ final class ComicInfoRequest: MarvelRequest<ComicFilter, ComicInfo>, InfoRequest
     
     override var query: String {
         var request = "comics?"
-        request.addMarvelArgument("format", filter?.format)
-        request.addMarvelArgument("formatType", filter?.formatType)
-        request.addMarvelArgument("dateDescriptor", filter?.dateDescriptor)
+        request.addMarvelArgument("format", filter?.format?.rawValue)
+        request.addMarvelArgument("formatType", filter?.formatType?.rawValue)
+        request.addMarvelArgument("dateDescriptor", filter?.dateDescriptor?.rawValue)
         request.addMarvelArgument("title", filter?.title)
         request.addMarvelArgument("titleStartsWith", filter?.titleStartsWith)
         request.addMarvelArgument("startYear", filter?.startYear)

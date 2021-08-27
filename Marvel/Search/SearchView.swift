@@ -41,7 +41,8 @@ struct SearchView: View {
 struct SearchResultsView: View {
     @Environment(\.managedObjectContext) var context: NSManagedObjectContext
     
-    // Did not use @ObservedObject to avoid the body recreated every time the searchText property get changed
+    // Did not use @ObservedObject to prevent the body recreated
+    // every time the searchText property got changed
     var store: SearchStore
     
     @State var query = ""
@@ -51,34 +52,33 @@ struct SearchResultsView: View {
     
     var body: some View {
         ScrollView {
-            LazyVStack(spacing: 40) {
-                if query.isEmpty {
-                    DefaultSearchResultsView()
-                } else {
+            if query.isEmpty {
+                DefaultSearchResultsView()
+            } else {
+                VStack(spacing: 40) {
                     switch scopeSearch {
                     case .all:
                         MarvelSectionView(CharacterFilter(nameStartsWith: query), saveRequest: false, title: "Characters", rowCount: 2, itemWidth: 165)
                         MarvelSectionView(ComicFilter(titleStartsWith: query), saveRequest: false, title: "Comics", itemWidth: 250)
                         MarvelSectionView(EventFilter(nameStartsWith: query), saveRequest: false, title: "Events", rowCount: 3)
-                        MarvelSectionView(SeriesFilter(titleStartsWith: query), saveRequest: false, title: "Series", rowCount: 2, verticalDirection: true)
-                        // MarvelSectionView(CreatorFilter(nameStartsWith: query), saveRequest: false, title: "Creators", showsSeeAll: false)
+                        MarvelSectionView(SeriesFilter(titleStartsWith: query), saveRequest: false, title: "Series", showsSeeAll: false, verticalDirection: true)
                     default:
                         EmptyView()
                     }
                 }
             }
-            .onReceive(store.$selectedScope) { selected in
-                self.selectedScope = selected
-            }
-            .onReceive(
-                store.$searchText
-                    .removeDuplicates()
-                    .debounce(for: .seconds(0.5), scheduler: RunLoop.main)
-            ) { searchText in
-                if searchText != query {
-                    print("Published searchText: \(searchText)")
-                    query = searchText.replacingOccurrences(of: " ", with: "%20")
-                }
+        }
+        .onReceive(store.$selectedScope) { selected in
+            self.selectedScope = selected
+        }
+        .onReceive(
+            store.$searchText
+                .removeDuplicates()
+                .debounce(for: .seconds(0.5), scheduler: RunLoop.main)
+        ) { searchText in
+            if searchText != query {
+                print("Published searchText: \(searchText)")
+                query = searchText.replacingOccurrences(of: " ", with: "%20")
             }
         }
     }

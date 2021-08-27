@@ -19,7 +19,7 @@ struct MarvelDataWrapper<Info>: Codable where Info: Codable {
 class MarvelRequest<Filter, Info> where Info: Codable {
     private(set) var results = CurrentValueSubject<Array<Info>, Never>([])
     private(set) var filter: Filter?
-    private(set) var limit = 10
+    private(set) var limit = 20
     private(set) var offset = 0
     
     init(_ filter: Filter, limit: Int? = nil) {

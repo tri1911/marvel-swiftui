@@ -55,7 +55,7 @@ struct SeriesFilter: MarvelFilter {
     var creatorId: Int?
     var characterId: Int?
     var seriesType: String?
-    var contains: String?
+    var contains: ComicFilter.Format?
     var orderBy: String?
 }
 
@@ -75,7 +75,7 @@ final class SeriesInfoRequest: MarvelRequest<SeriesFilter, SeriesInfo>, InfoRequ
         request.addMarvelArgument("creators", filter?.creatorId)
         request.addMarvelArgument("characters", filter?.characterId)
         request.addMarvelArgument("seriesType", filter?.seriesType)
-        request.addMarvelArgument("contains", filter?.contains)
+        request.addMarvelArgument("contains", filter?.contains?.rawValue)
         request.addMarvelArgument("orderBy", filter?.orderBy)
         request.addMarvelArgument("limit", max(1, min(limit, 100)))
         request.addMarvelArgument("offset", offset)

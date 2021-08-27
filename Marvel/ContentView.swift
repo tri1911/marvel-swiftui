@@ -8,38 +8,39 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var tabSelection = 1
+    
     var body: some View {
-        TabView {
-            HomeView()
+        TabView(selection: $tabSelection) {
+            HomeView(tabSelection: $tabSelection)
                 .tabItem {
                     Image(systemName: "safari.fill")
                     Text("Discover")
                 }
+                .tag(1)
             
-            Text("Characters")
-                .tabItem {
-                    Image(systemName: "person.3.fill")
-                    Text("Characters")
-                }
-            
-            Text("Comics")
+            ComicsView()
                 .tabItem {
                     Image(systemName: "books.vertical.fill")
                     Text("Comics")
                 }
+                .tag(2)
             
             FavoritesView()
                 .tabItem {
                     Image(systemName: "heart.fill")
                     Text("Favorites")
                 }
+                .tag(3)
             
             SearchView()
                 .tabItem {
                     Image(systemName: "magnifyingglass")
                     Text("Search")
                 }
+                .tag(4)
         }
+        .accentColor(.purple)
     }
 }
 

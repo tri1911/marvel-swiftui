@@ -8,23 +8,17 @@
 import SwiftUI
 
 struct HomeView: View {
+    @Binding var tabSelection: Int
+    
     var body: some View {
         NavigationView {
             ScrollView(.vertical, showsIndicators: false) {
-                LazyVStack(spacing: 40) {
+                VStack(spacing: 40) {
                     // Overview
-                    StandardSectionView(Array(0..<5), id: \.self) { _ in
-                        CardView5()
-                    }
+                    FeaturedComicsView(ComicFilter(formatType: .comic, dateDescriptor: .thisMonth, startYear: 2021, orderBy: "issueNumber"))
                     
                     // Categories
-                    VStack {
-                        Divider().padding(.horizontal)
-                        StandardHeaderView<AnyView>(title: "Categories").padding(.horizontal)
-                        StandardSectionView(Category.categories, id: \.self) {
-                            CategoryCardView(category: $0)
-                        }
-                    }
+                    CategoriesSectionView(tabSelection: $tabSelection)
                     
                     // Characters
                     MarvelSectionView(CharacterFilter(orderBy: "-modified"), title: "Characters", itemWidth: 165)
@@ -50,16 +44,9 @@ struct HomeView: View {
     }
 }
 
-enum Category: String, CaseIterable, Identifiable {
-    case characters, comics, events, series, stories, creators
-    var id: Category { self }
-    var title: String { self.rawValue.capitalized }
-    static var categories: [String] { Category.allCases.map { $0.rawValue.capitalized } }
-}
-
 struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
-        HomeView()
+        HomeView(tabSelection: .constant(1))
             .previewLayout(.sizeThatFits)
     }
 }
