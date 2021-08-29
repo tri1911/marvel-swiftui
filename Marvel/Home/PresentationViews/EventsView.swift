@@ -60,7 +60,7 @@ struct EventsView: View {
                 LoadingView()
             }
         }
-        .navigationTitle("Events (\(events?.count ?? 0) in total)")
+        .navigationTitle("Events")
     }
     
     // MARK: - Scrolling to Top Button

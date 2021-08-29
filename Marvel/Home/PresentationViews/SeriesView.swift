@@ -59,7 +59,7 @@ struct SeriesView: View {
                 LoadingView()
             }
         }
-        .navigationTitle("Series (\(series?.count ?? 0) in total)")
+        .navigationTitle("Series")
     }
     
     // MARK: - Scrolling to Top Button

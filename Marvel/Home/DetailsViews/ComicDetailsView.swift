@@ -28,7 +28,7 @@ struct ComicDetailsView: View {
             }
             .padding()
         }
-        .navigationTitle("Comic Details")
+        .navigationTitle(comic.title)
         .navigationBarTitleDisplayMode(.inline)
     }
     
