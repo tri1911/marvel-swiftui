@@ -2,7 +2,7 @@
 //  MarvelRequest+StoryInfo.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-16.
+//  Created by Elliot Ho.
 //
 
 import Foundation
@@ -19,13 +19,6 @@ struct StoryInfo: Codable, Identifiable, Hashable {
     // MARK: - Syntactic Sugar
     
     var description_: String { description == nil ? "Default Description for Story" : description! }
-    
-    var modified_: String {
-        let date = ISO8601DateFormatter().date(from: modified) ?? Date()
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMMM dd"
-        return dateFormatter.string(from: date)
-    }
     
     struct ComicSummary: Codable {
         let resourceURI: String //  The path to the individual series resource

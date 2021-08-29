@@ -2,7 +2,7 @@
 //  UtilityExtensions.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-20.
+//  Created by Elliot Ho.
 //
 
 import Foundation
@@ -56,4 +56,13 @@ extension String {
 extension NSPredicate {
     static var all = NSPredicate(format: "TRUEPREDICATE")
     static var none = NSPredicate(format: "FALSEPREDICATE")
+}
+
+extension String {
+    var formattedDate: String {
+        let date = ISO8601DateFormatter().date(from: self) ?? Date()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMMM dd, YYYY"
+        return dateFormatter.string(from: date)
+    }
 }

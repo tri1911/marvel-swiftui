@@ -2,7 +2,7 @@
 //  FavoritesView.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-23.
+//  Created by Elliot Ho.
 //
 
 import SwiftUI

@@ -2,7 +2,7 @@
 //  UINavigationControllerRepresentation.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-21.
+//  Created by Elliot Ho.
 //
 
 import SwiftUI

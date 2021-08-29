@@ -2,7 +2,7 @@
 //  MarvelRequest+CharacterInfo.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-10.
+//  Created by Elliot Ho.
 //
 
 import Foundation
@@ -16,13 +16,6 @@ struct CharacterInfo: Codable, Identifiable, Hashable {
     let thumbnail: MarvelImage // The representative image for this character
     
     var description_: String { description.isEmpty ? "Default Description for Character" : description }
-    // TODO: Share codes with other Info Class
-    var modified_: String {
-        let date = ISO8601DateFormatter().date(from: modified) ?? Date()
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMMM dd"
-        return dateFormatter.string(from: date)
-    }
     
     static func == (lhs: CharacterInfo, rhs: CharacterInfo) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
@@ -35,13 +28,14 @@ struct MarvelURL: Codable, Hashable {
     var url_: URL? { URL(string: "https\(url.dropFirst(4))") }
 }
 
-struct MarvelImage: Codable {
+struct MarvelImage: Codable, Hashable {
     let path: String // The directory path of to the image
     let `extension`: String // The file extension for the image
     
     var url: URL? { URL(string: "https\(path.dropFirst(4)).\(`extension`)") }
 }
 
+// TODO: OrderBy enum
 struct CharacterFilter: MarvelFilter {
     typealias Request = CharacterInfoRequest
     typealias CardView = CharacterCardView

@@ -2,10 +2,11 @@
 //  EventDetailsView.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-18.
+//  Created by Elliot Ho.
 //
 
 import SwiftUI
+import SDWebImageSwiftUI
 
 struct EventDetailsView: View {
     let event: EventInfo
@@ -27,14 +28,74 @@ struct EventDetailsView: View {
     }
     
     var mainInfo: some View {
-        VStack {
-            Image.soobinThumbnail(width: 200, height: 200)
+        VStack(spacing: 15) {
+            // thumbnail
+            WebImage(url: event.thumbnail.url)
+                .resizable()
+                .indicator(.activity)
+                .scaledToFit()
+                .frame(width: 200, height: 200)
+                .cornerRadius(10.0)
+            
             // title
-            Text("Series Title")
+            Text(event.title)
+                .font(.title3)
+                .fontWeight(.bold)
+            
             // description
-            Text("Description")
-            // startYear, endYear, next, previous (if needed)
+            VStack(alignment: .leading, spacing: 15) {
+                Divider()
+                Text("DETAILS").font(.headline)
+                Text(event.description_)
+            }
+            
+            // set of public websites
+            HStack(spacing: 15) {
+                let urls = event.urls
+                ForEach(urls, id: \.self) { url in
+                    let title = url.type.capitalized
+                    if let validURL = url.url_ {
+                        NavigationLink(destination: WebView(url: validURL).navigationTitle(title)) {
+                            Text(title)
+                        }
+                        
+                        if let index = urls.firstIndex { $0 == url }, index != urls.count - 1 {
+                            Image(systemName: "circle.fill").font(.system(size: 3))
+                        }
+                    }
+                }
+            }
+            .lineLimit(1)
+            
+            VStack(alignment: .leading, spacing: 15) {
+                Divider()
+                Text("Information")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                
+                // Start, End Date
+                if let start = event.start, let end = event.end {
+                    InformationCellView(name: "Start Date", content: start.formattedDate)
+                    Divider()
+                    InformationCellView(name: "End Date", content: end.formattedDate)
+                    Divider()
+                }
+                
+                // Next, Previous Event
+                if let next = event.next {
+                    Text(next.name)
+                    Text(next.resourceURI)
+                    Divider()
+                }
+                
+                if let previous = event.previous {
+                    Text(previous.name)
+                    Text(previous.resourceURI)
+                    Divider()
+                }
+            }
         }
+        .padding(.horizontal)
     }
     
     var charactersSection: some View {

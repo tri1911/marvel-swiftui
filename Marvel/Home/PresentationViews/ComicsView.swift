@@ -2,7 +2,7 @@
 //  ComicsView.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-11.
+//  Created by Elliot Ho.
 //
 
 import SwiftUI
@@ -21,15 +21,15 @@ struct ComicsView: View {
                     // MarvelSectionView(ComicFilter(format: format, formatType: formatTypeSelection, dateDescriptor: .thisMonth, orderBy: "-onsaleDate"), title: "This Month Sale", itemWidth: 200)
                     switch formatTypeSelection {
                     case .comic:
-                        MarvelSectionView(ComicFilter(format: .comic, formatType: .comic, dateDescriptor: .thisWeek, orderBy: "-issueNumber"), title: "New Releases", itemWidth: 200)
-                        MarvelSectionView(ComicFilter(format: .comic, formatType: .comic, dateDescriptor: .lastWeek, orderBy: "-issueNumber"), title: "Last Week Releases", itemWidth: 200)
-                        MarvelSectionView(ComicFilter(format: .comic, formatType: .comic, dateDescriptor: .nextWeek, orderBy: "-issueNumber"), title: "Incoming Comics", itemWidth: 200)
-                        MarvelSectionView(ComicFilter(format: .comic, formatType: .comic, dateDescriptor: .thisMonth, orderBy: "-onsaleDate"), title: "This Month Sale", itemWidth: 200)
+                        MarvelSectionView(ComicFilter(format: .comic, formatType: .comic, orderBy: "focDate"), title: "Recently Published", itemWidth: 200) // 40740 in total
+                        MarvelSectionView(ComicFilter(format: .comic, formatType: .comic, hasDigitalIssue: true, orderBy: "focDate"), title: "Digital Issues", itemWidth: 200) // 28182 in total
+                        MarvelSectionView(ComicFilter(format: .comic, formatType: .comic, dateDescriptor: .thisMonth, orderBy: "onsaleDate"), title: "On Sale This Month", itemWidth: 200) // 190 in Total
+                        MarvelSectionView(ComicFilter(format: .comic, formatType: .comic, dateDescriptor: .lastWeek, orderBy: "-issueNumber"), title: "Last Week Releases", itemWidth: 200) // 33 in Total
                     case.collection:
-                        MarvelSectionView(ComicFilter(formatType: .collection, dateDescriptor: .thisWeek, orderBy: "-issueNumber"), title: "New Releases", itemWidth: 200)
-                        MarvelSectionView(ComicFilter(formatType: .collection, dateDescriptor: .lastWeek, orderBy: "-issueNumber"), title: "Last Week Releases", itemWidth: 200)
-                        MarvelSectionView(ComicFilter(formatType: .collection, dateDescriptor: .nextWeek, orderBy: "-issueNumber"), title: "Incoming Collections", itemWidth: 200)
-                        MarvelSectionView(ComicFilter(formatType: .collection, dateDescriptor: .thisMonth, orderBy: "-onsaleDate"), title: "This Month Sale", itemWidth: 200)
+                        MarvelSectionView(ComicFilter(formatType: .collection, orderBy: "focDate"), title: "Recently Published", itemWidth: 200) // 7303 in total
+                        MarvelSectionView(ComicFilter(formatType: .collection, hasDigitalIssue: true, orderBy: "focDate"), title: "Digital Issues", itemWidth: 200) // 12 in total
+                        MarvelSectionView(ComicFilter(formatType: .collection, dateDescriptor: .thisMonth, orderBy: "onsaleDate"), title: "On Sale This Month", itemWidth: 200) // 24 in Total
+                        MarvelSectionView(ComicFilter(formatType: .collection, dateDescriptor: .lastWeek, orderBy: "-issueNumber"), title: "Last Week Releases", itemWidth: 200) // 5 in Total
                     }
                 }
             }

@@ -2,7 +2,7 @@
 //  EventsView.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-27.
+//  Created by Elliot Ho.
 //
 
 import SwiftUI

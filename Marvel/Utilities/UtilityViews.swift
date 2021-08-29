@@ -2,18 +2,22 @@
 //  UtilityViews.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-20.
+//  Created by Elliot Ho.
 //
 
 import SwiftUI
 import Combine
 import CoreData
+import SDWebImageSwiftUI
 
+// TODO: Accessing StateObject's object without being installed on a View. This will create a new instance each time.
 struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
     
     // MARK: - Request
     
-    @StateObject var request: Filter.Request
+    @StateObject private var request: Filter.Request
+    
+    private var infos: [Filter.Request.Info]? { request.results }
     
     // MARK: - Header
     
@@ -28,8 +32,8 @@ struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
     let itemHeight: CGFloat?
     let verticalDirection: Bool
     
-    init(_ filter: Filter, saveRequest: Bool = true, title: String? = nil, subtitle: String? = nil, showsSeeAll: Bool = true, rowCount: Int? = nil, itemWidth: CGFloat? = nil, itemHeight: CGFloat? = nil, verticalDirection: Bool = false) {
-        _request = .init(wrappedValue: Filter.Request.create(filter, saveRequest: saveRequest))
+    init(_ filter: Filter, limit: Int? = nil, offset: Int? = nil, saveRequest: Bool = true, title: String? = nil, subtitle: String? = nil, showsSeeAll: Bool = true, rowCount: Int? = nil, itemWidth: CGFloat? = nil, itemHeight: CGFloat? = nil, verticalDirection: Bool = false) {
+        _request = .init(wrappedValue: Filter.Request.create(filter, limit: limit, offset: offset, saveRequest: saveRequest))
         self.title = title
         self.subtitle = subtitle
         self.showsSeeAll = showsSeeAll
@@ -43,17 +47,17 @@ struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
         VStack {
             Divider().padding(.horizontal)
 
-            StandardHeaderView(title: title, subtitle: subtitle, seeAllDestination: showsSeeAll && !(request.results?.isEmpty ?? true) ? seeAllDestination : nil)
+            StandardHeaderView(title: title, subtitle: subtitle, seeAllDestination: showsSeeAll && !(infos?.isEmpty ?? true) ? seeAllDestination : nil)
                 .padding(.horizontal)
 
             if verticalDirection {
-                StandardVerticalStackView(items: request.results) { info in
+                StandardVerticalStackView(items: infos) { info in
                     Filter.CardView(info)
                         .frame(width: itemWidth, height: itemHeight)
                 }
             } else {
                 if let rowCount = rowCount {
-                    StandardSectionView(request.results?.dividesToGroup(of: rowCount), id: \.self) { group in
+                    StandardSectionView(infos?.dividesToGroup(of: rowCount), id: \.self) { group in
                         VStack(alignment: .leading, spacing: 15) {
                             ForEach(group) { info in
                                 Filter.CardView(info).frame(width: itemWidth, height: itemHeight)
@@ -64,7 +68,7 @@ struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
                         }
                     }
                 } else {
-                    StandardSectionView(request.results) { info in
+                    StandardSectionView(infos) { info in
                         Filter.CardView(info).frame(width: itemWidth, height: itemHeight)
                     }
                 }
@@ -76,25 +80,13 @@ struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
         ScrollView {
             let cardType = Filter.CardView.self
             if (cardType == EventCardView.self) || (cardType == SeriesCardView.self) {
-                StandardVerticalStackView(items: request.results) { info in
+                StandardVerticalStackView(items: infos) { info in
                     Filter.CardView(info)
                 }
             } else {
-                StandardGridView(items: request.results) { Filter.CardView($0) }
+                StandardGridView(items: infos) { Filter.CardView($0) }
             }
         }
-    }
-}
-
-// MARK: - Extension(s)
-
-extension Image {
-    static func soobinThumbnail(width: CGFloat? = nil, height: CGFloat? = nil) -> some View {
-        Image("soobin\(Int.random(in: 0..<14))")
-            .resizable()
-            .scaledToFill()
-            .frame(width: width, height: height)
-            .cornerRadius(10.0)
     }
 }
 
@@ -251,11 +243,16 @@ struct CharacterCardView: MarvelCardView {
             NavigationLink(destination: CharacterDetailsView(character: characterInfo)) {
                 VStack(alignment: .leading, spacing: 10) {
                     GeometryReader { geometry in
-                        Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
+                        WebImage(url: characterInfo.thumbnail.url)
+                            .resizable()
+                            .indicator(.activity)
+                            .scaledToFill()
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .cornerRadius(10.0)
                     }
                     
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(characterInfo.modified_.uppercased())
+                        Text(characterInfo.modified.formattedDate.uppercased())
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(.gray)
                         Text(characterInfo.name)
@@ -317,11 +314,16 @@ struct ComicCardView: MarvelCardView {
             NavigationLink(destination: ComicDetailsView(comic: comicInfo)) {
                 VStack(alignment: .leading, spacing: 10) {
                     GeometryReader { geometry in
-                        Image.soobinThumbnail(width: geometry.size.width, height: geometry.size.height)
+                        WebImage(url: comicInfo.thumbnail.url)
+                            .resizable()
+                            .indicator(.activity)
+                            .scaledToFill()
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .cornerRadius(10.0)
                     }
                     
                     VStack(alignment: .leading, spacing: 5) {
-                        Text(comicInfo.modified_.uppercased())
+                        Text(comicInfo.modified.formattedDate.uppercased())
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(.gray)
                         Text(comicInfo.title)
@@ -369,25 +371,30 @@ struct ComicCardView: MarvelCardView {
 
 struct EventCardView: MarvelCardView {
     let defaultSize: CGFloat = 70
-    let event: EventInfo
+    let eventInfo: EventInfo
     
     init(_ info: EventInfo) {
-        self.event = info
+        self.eventInfo = info
     }
     
     var body: some View {
-        NavigationLink(destination: EventDetailsView(event: event)) {
+        NavigationLink(destination: EventDetailsView(event: eventInfo)) {
             HStack(spacing: 15) {
-                Image.soobinThumbnail(width: defaultSize, height: defaultSize)
-                Text("1")
-                    .font(.callout)
-                    .fontWeight(.bold)
+                WebImage(url: eventInfo.thumbnail.url)
+                    .resizable()
+                    .indicator(.activity)
+                    .scaledToFill()
+                    .frame(width: defaultSize, height: defaultSize)
+                    .cornerRadius(10.0)
+//                Text("1")
+//                    .font(.callout)
+//                    .fontWeight(.bold)
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(event.title)
+                    Text(eventInfo.title)
                         .fontWeight(.medium)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text(event.description_)
+                    Text(eventInfo.description_)
                         .font(.caption2)
                         .foregroundColor(.gray)
                         .lineLimit(3)
@@ -402,6 +409,7 @@ struct EventCardView: MarvelCardView {
 
 struct SeriesCardView: MarvelCardView {
     @Environment(\.managedObjectContext) var context: NSManagedObjectContext
+    let defaultSize: CGFloat = 100
     let seriesInfo: SeriesInfo
     
     init(_ info: SeriesInfo) {
@@ -415,9 +423,14 @@ struct SeriesCardView: MarvelCardView {
         ZStack(alignment: .topTrailing) {
             NavigationLink(destination: SeriesDetailsView(series: seriesInfo)) {
                 HStack(alignment: .top) {
-                    Image.soobinThumbnail(width: 100, height: 100)
+                    WebImage(url: seriesInfo.thumbnail.url)
+                        .resizable()
+                        .indicator(.activity)
+                        .scaledToFill()
+                        .frame(width: defaultSize, height: defaultSize)
+                        .cornerRadius(10.0)
                     VStack(alignment: .leading) {
-                        Text(seriesInfo.modified_.uppercased())
+                        Text(seriesInfo.modified.formattedDate.uppercased())
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(.gray)
                         Spacer()
@@ -487,7 +500,10 @@ struct StoryCardView: MarvelCardView {
     }
     
     var body: some View {
-        Image.soobinThumbnail(width: defaultSize.0, height: defaultSize.1)
+        Image("marvel\(Int.random(in: 1..<6))")
+            .resizable()
+            .scaledToFill()
+            .frame(width: defaultSize.0, height: defaultSize.1)
             .overlay(banner, alignment: .bottom)
             .cornerRadius(10.0)
     }
@@ -508,6 +524,7 @@ struct StoryCardView: MarvelCardView {
 }
 
 struct CreatorCardView: MarvelCardView {
+    let defaultSize: CGFloat = 100
     let creator: CreatorInfo
     
     init(_ info: CreatorInfo) {
@@ -517,19 +534,24 @@ struct CreatorCardView: MarvelCardView {
     var body: some View {
         NavigationLink(destination: CreatorDetailsView(creator: creator)) {
             VStack {
-                Image.soobinThumbnail(width: 100, height: 100)
+                WebImage(url: creator.thumbnail.url)
+                    .resizable()
+                    .indicator(.activity)
+                    .scaledToFill()
+                    .frame(width: defaultSize, height: defaultSize)
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.06), radius: 5, x: 5, y: 5)
                     .shadow(color: .black.opacity(0.06), radius: 5, x: -5, y: -5)
                 Text(creator.fullName)
-                    .fontWeight(.medium)
+                    .fontWeight(.semibold)
+                    .lineLimit(1)
             }
-            .frame(maxWidth: 100)
+            .frame(maxWidth: defaultSize, idealHeight: 120)
         }
     }
 }
 
-// MARK: - Loading Indicator
+// MARK: - Reusable View(s)
 
 struct LoadingView: View {
     var body: some View {
@@ -544,5 +566,18 @@ struct LoadingView: View {
         }
         .frame(width: 150, height: 150)
         .cornerRadius(15.0)
+    }
+}
+
+struct InformationCellView: View {
+    let name: String
+    let content: String
+    
+    var body: some View {
+        HStack {
+            Text(name).foregroundColor(.gray)
+            Spacer()
+            Text(content.isEmpty ? "Info Content" : content)
+        }
     }
 }

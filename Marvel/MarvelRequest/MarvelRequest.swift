@@ -2,7 +2,7 @@
 //  MarvelRequest.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-10.
+//  Created by Elliot Ho.
 //
 
 import Foundation
@@ -30,7 +30,7 @@ extension InfoRequest {
             return request
         } else {
             let request = Self(filter, limit: limit, offset: offset)
-            request.fetch(useCache: true)
+            request.fetch(useCache: false)
             if saveRequest { requests[filter] = request }
             return request
         }
@@ -99,12 +99,12 @@ class MarvelRequest<Filter, Info>: ObservableObject where Info: Codable {
                     .replaceError(with: [])
                     .receive(on: DispatchQueue.main)
                     .sink { [weak self] results in
+                        let oldValue = self?.results ?? []
+                        self?.results = oldValue + results
                         if results.isEmpty {
                             print("Returned empty set")
                         } else {
-                            let oldValue = self?.results ?? []
-                            self?.results = oldValue + results
-                            print("Successful fetching")
+                            print("\(String(describing: self)): Successful fetching \(results.count) items (\(self?.total ?? 0) in total)")
                         }
                     }
             } else {

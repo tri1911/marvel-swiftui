@@ -2,7 +2,7 @@
 //  MarvelRequest+CreatorInfo.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-15.
+//  Created by Elliot Ho.
 //
 
 import Foundation
@@ -21,13 +21,6 @@ struct CreatorInfo: Codable, Identifiable, Hashable {
     // MARK: - Syntactic Sugar
     
     var description_: String { "" }
-    
-    var modified_: String {
-        let date = ISO8601DateFormatter().date(from: modified) ?? Date()
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMMM dd"
-        return dateFormatter.string(from: date)
-    }
     
     static func == (lhs: CreatorInfo, rhs: CreatorInfo) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }

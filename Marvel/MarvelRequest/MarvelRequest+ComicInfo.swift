@@ -2,7 +2,7 @@
 //  MarvelRequest+ComicInfo.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-10.
+//  Created by Elliot Ho.
 //
 
 import Foundation
@@ -23,13 +23,6 @@ struct ComicInfo: Codable, Identifiable, Hashable {
     
     var description_: String { description != nil ? description! : "Default Description for Comic" }
     
-    var modified_: String {
-        let date = ISO8601DateFormatter().date(from: modified) ?? Date()
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMMM dd, YYYY"
-        return dateFormatter.string(from: date)
-    }
-    
     static func == (lhs: ComicInfo, rhs: ComicInfo) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
@@ -44,6 +37,7 @@ struct ComicFilter: MarvelFilter {
     var titleStartsWith: String? // Searching parameter
     var startYear: Int?
     var isbn: String?
+    var hasDigitalIssue: Bool?
     var modifiedSince: String?
     var creatorId: Int?
     var characterId: Int?
@@ -94,6 +88,9 @@ final class ComicInfoRequest: MarvelRequest<ComicFilter, ComicInfo>, InfoRequest
         request.addMarvelArgument("titleStartsWith", filter?.titleStartsWith)
         request.addMarvelArgument("startYear", filter?.startYear)
         request.addMarvelArgument("isbn", filter?.isbn)
+        if let hasDigitalIssue = filter?.hasDigitalIssue {
+            request.addMarvelArgument("hasDigitalIssue", String(hasDigitalIssue))
+        }
         request.addMarvelArgument("modifiedSince", filter?.modifiedSince)
         request.addMarvelArgument("creators", filter?.creatorId)
         request.addMarvelArgument("characters", filter?.characterId)

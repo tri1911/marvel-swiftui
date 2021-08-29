@@ -2,7 +2,7 @@
 //  MarvelApp.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-10.
+//  Created by Elliot Ho.
 //
 
 import SwiftUI

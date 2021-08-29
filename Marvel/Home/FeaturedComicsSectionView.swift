@@ -2,10 +2,11 @@
 //  FeaturedComicsSectionView.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-28.
+//  Created by Elliot Ho.
 //
 
 import SwiftUI
+import SDWebImageSwiftUI
 
 struct FeaturedComicsSectionView: View {
     @StateObject var request: ComicInfoRequest
@@ -41,7 +42,13 @@ struct FeaturedComicCardView: View {
                 Text("Published by Marvel.")
                     .font(.title3)
                     .foregroundColor(.gray)
-                Image.soobinThumbnail(width: screenWidth * 0.9, height: 150)
+                WebImage(url: comic.thumbnail.url)
+                    .resizable()
+                    .indicator(.activity)
+                    .scaledToFill()
+                    .frame(width: screenWidth * 0.9, height: 170)
+                    .cornerRadius(10.0)
+                // Image.soobinThumbnail(width: screenWidth * 0.9, height: 150)
             }
             .frame(maxWidth: screenWidth * 0.9)
         }

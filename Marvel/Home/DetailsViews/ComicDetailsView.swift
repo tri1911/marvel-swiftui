@@ -2,10 +2,11 @@
 //  ComicDetailsView.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-16.
+//  Created by Elliot Ho.
 //
 
 import SwiftUI
+import SDWebImageSwiftUI
 
 struct ComicDetailsView: View {
     static let thumbnailSize: (width: CGFloat, height: CGFloat) = (200, 200)
@@ -17,12 +18,12 @@ struct ComicDetailsView: View {
             VStack {
                 overview
                 charactersSection
-                seriesSection
-                eventsSection
-                storiesSection
                 creatorsSection
                 fullDescription
                 detailsInformation
+                seriesSection
+                storiesSection
+                eventsSection
                 Spacer()
             }
             .padding()
@@ -37,8 +38,12 @@ struct ComicDetailsView: View {
         VStack(alignment: .center, spacing: 15) {
             // Promotional Images
             TabView {
-                ForEach(0..<5, id: \.self) { _ in // Replace with comic.images
-                    Image.soobinThumbnail()
+                ForEach(comic.images, id: \.self) { image in
+                    WebImage(url: image.url)
+                        .resizable()
+                        .indicator(.activity)
+                        .scaledToFit()
+                        .cornerRadius(10.0)
                 }
             }
             .tabViewStyle(PageTabViewStyle())
@@ -54,13 +59,23 @@ struct ComicDetailsView: View {
                 .fixedSize(horizontal: false, vertical: true)
             // Set of public websites
             HStack(spacing: 15) {
-                Text("Detail")
-                Image(systemName: "circle.fill").font(.system(size: 3))
-                Text("Wiki")
-                Image(systemName: "circle.fill").font(.system(size: 3))
-                Text("ComicLink")
+                let urls = comic.urls
+                ForEach(urls, id: \.self) { url in
+                    let title = url.type.capitalized
+                    if let validURL = url.url_ {
+                        NavigationLink(destination: WebView(url: validURL).navigationTitle(title)) {
+                            Text(title)
+                        }
+                        
+                        if let index = urls.firstIndex { $0 == url }, index != urls.count - 1 {
+                            Image(systemName: "circle.fill").font(.system(size: 3))
+                        }
+                    }
+                }
             }
+            .lineLimit(1)
         }
+        .padding(.horizontal)
     }
 
     var charactersSection: some View {
@@ -89,6 +104,7 @@ struct ComicDetailsView: View {
             Text("ABOUT").font(.headline)
             Text(comic.description_)
         }
+        .padding(.horizontal)
     }
     
     var detailsInformation: some View {
@@ -104,20 +120,6 @@ struct ComicDetailsView: View {
             Divider()
             InformationCellView(name: "Pages", content: String(comic.pageCount))
         }
-    }
-    
-    // MARK: - Reusable View(s)
-    
-    struct InformationCellView: View {
-        let name: String
-        let content: String
-        
-        var body: some View {
-            HStack {
-                Text(name).foregroundColor(.gray)
-                Spacer()
-                Text(content.isEmpty ? "Info Content" : content)
-            }
-        }
+        .padding(.horizontal)
     }
 }

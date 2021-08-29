@@ -2,7 +2,7 @@
 //  MarvelRequest+SeriesInfo.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-16.
+//  Created by Elliot Ho.
 //
 
 import Foundation
@@ -23,13 +23,6 @@ struct SeriesInfo: Codable, Identifiable, Hashable {
     // MARK: - Syntactic Sugar
     
     var description_: String { description == nil ? "Default Description for Series" : description! }
-    
-    var modified_: String {
-        let date = ISO8601DateFormatter().date(from: modified) ?? Date()
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MMMM dd"
-        return dateFormatter.string(from: date)
-    }
     
     struct SeriesSummary: Codable {
         let resourceURI: String //  The path to the individual series resource
@@ -54,9 +47,13 @@ struct SeriesFilter: MarvelFilter {
     var eventId: Int?
     var creatorId: Int?
     var characterId: Int?
-    var seriesType: String?
+    var seriesType: SeriesType?
     var contains: ComicFilter.Format?
     var orderBy: String?
+    
+    enum SeriesType: String, CaseIterable {
+        case collection, oneshot, limited, ongoing
+    }
 }
 
 final class SeriesInfoRequest: MarvelRequest<SeriesFilter, SeriesInfo>, InfoRequest {
@@ -74,7 +71,7 @@ final class SeriesInfoRequest: MarvelRequest<SeriesFilter, SeriesInfo>, InfoRequ
         request.addMarvelArgument("events", filter?.eventId)
         request.addMarvelArgument("creators", filter?.creatorId)
         request.addMarvelArgument("characters", filter?.characterId)
-        request.addMarvelArgument("seriesType", filter?.seriesType)
+        request.addMarvelArgument("seriesType", filter?.seriesType?.rawValue)
         request.addMarvelArgument("contains", filter?.contains?.rawValue)
         request.addMarvelArgument("orderBy", filter?.orderBy)
         request.addMarvelArgument("limit", max(1, min(limit, 100)))

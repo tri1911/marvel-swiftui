@@ -2,18 +2,14 @@
 //  CharactersView.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-10.
+//  Created by Elliot Ho.
 //
 
 import SwiftUI
 import Combine
 
 struct CharactersView: View {
-    @StateObject var request: CharacterInfoRequest
-    
-    init() {
-        _request = .init(wrappedValue: CharacterInfoRequest.create(CharacterFilter(orderBy: "name"), limit: 10))
-    }
+    @StateObject var request = CharacterInfoRequest.create(CharacterFilter(orderBy: "name"), limit: 10)
     
     var characters: [CharacterInfo]? { request.results }
     

@@ -2,7 +2,7 @@
 //  Series.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-25.
+//  Created by Elliot Ho.
 //
 
 import CoreData

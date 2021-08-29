@@ -2,10 +2,11 @@
 //  CharacterDetailsView.swift
 //  Marvel
 //
-//  Created by Elliot Ho on 2021-08-11.
+//  Created by Elliot Ho.
 //
 
 import SwiftUI
+import SDWebImageSwiftUI
 
 struct CharacterDetailsView: View {
     static let thumbnailSize: (width: CGFloat, height: CGFloat) = (200, 200)
@@ -29,25 +30,40 @@ struct CharacterDetailsView: View {
     
     var mainInfo: some View {
         VStack(alignment: .center, spacing: 15) {
-            Image.soobinThumbnail(width: CharacterDetailsView.thumbnailSize.width,
-                                  height: CharacterDetailsView.thumbnailSize.height)
+            WebImage(url: character.thumbnail.url)
+                .resizable()
+                .indicator(.activity)
+                .scaledToFit()
+                .frame(width: CharacterDetailsView.thumbnailSize.width, height: CharacterDetailsView.thumbnailSize.height)
+                .cornerRadius(10.0)
+            
             Text(character.name)
                 .font(.title3)
                 .fontWeight(.bold)
+            
             VStack(alignment: .leading, spacing: 15) {
                 Divider()
                 Text("ABOUT").font(.headline)
                 Text(character.description_)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            
             HStack(spacing: 15) {
-                Text("Detail")
-                Image(systemName: "circle.fill").font(.system(size: 3))
-                Text("Wiki")
-                Image(systemName: "circle.fill").font(.system(size: 3))
-                Text("ComicLink")
-                Spacer()
+                let urls = character.urls
+                ForEach(urls, id: \.self) { url in
+                    let title = url.type.capitalized
+                    if let validURL = url.url_ {
+                        NavigationLink(destination: WebView(url: validURL).navigationTitle(title)) {
+                            Text(title)
+                        }
+                        
+                        if let index = urls.firstIndex { $0 == url }, index != urls.count - 1 {
+                            Image(systemName: "circle.fill").font(.system(size: 3))
+                        }
+                    }
+                }
             }
+            .lineLimit(1)
         }
         .padding()
     }

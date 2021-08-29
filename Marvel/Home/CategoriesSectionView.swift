@@ -2,7 +2,7 @@
 //  CategoriesSectionView.swift
 //  Marvel
 //
-//  Created by Elliot Ho
+//  Created by Elliot Ho.
 //
 
 import SwiftUI
