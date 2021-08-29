@@ -9,48 +9,11 @@ import SwiftUI
 import Combine
 import CoreData
 
-protocol MarvelCardView: View {
-    associatedtype Info
-    init(_ info: Info)
-}
-
-protocol MarvelFilter: Hashable {
-    associatedtype Request: InfoRequest where Self == Request.Filter
-    associatedtype CardView: MarvelCardView where CardView.Info == Request.Info
-}
-
-protocol InfoRequest {
-    associatedtype Filter: MarvelFilter
-    associatedtype Info: Identifiable, Hashable
-    
-    static var requests: [Filter:Self] { get set }
-    var results: CurrentValueSubject<[Info], Never> { get }
-    init(_ filter: Filter, limit: Int?)
-    func fetch(useCache: Bool)
-}
-
-extension InfoRequest {
-    // A shared function that creates and saves a request class based on a specified filter.
-    // If the request does not exist, we create a new request and save it into `requests` for the next reference.
-    // Otherwise, it just returns the saved request (in `requests` dictionary)
-    static func create(_ filter: Filter, limit: Int? = nil, saveRequest: Bool = true) -> Self {
-        print("Go there...")
-        if let request = requests[filter] {
-            return request
-        } else {
-            let request = Self(filter, limit: limit)
-            request.fetch(useCache: true)
-            if saveRequest { requests[filter] = request }
-            return request
-        }
-    }
-}
-
 struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
     
     // MARK: - Request
     
-    let request: Filter.Request
+    @StateObject var request: Filter.Request
     
     // MARK: - Header
     
@@ -65,10 +28,8 @@ struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
     let itemHeight: CGFloat?
     let verticalDirection: Bool
     
-    @State private var infos = [Filter.Request.Info]()
-    
     init(_ filter: Filter, saveRequest: Bool = true, title: String? = nil, subtitle: String? = nil, showsSeeAll: Bool = true, rowCount: Int? = nil, itemWidth: CGFloat? = nil, itemHeight: CGFloat? = nil, verticalDirection: Bool = false) {
-        self.request = Filter.Request.create(filter, saveRequest: saveRequest)
+        _request = .init(wrappedValue: Filter.Request.create(filter, saveRequest: saveRequest))
         self.title = title
         self.subtitle = subtitle
         self.showsSeeAll = showsSeeAll
@@ -81,53 +42,45 @@ struct MarvelSectionView<Filter>: View where Filter: MarvelFilter {
     var body: some View {
         VStack {
             Divider().padding(.horizontal)
-            
-            StandardHeaderView(title: title, subtitle: subtitle, seeAllDestination: showsSeeAll && !infos.isEmpty ? seeAllDestination : nil)
+
+            StandardHeaderView(title: title, subtitle: subtitle, seeAllDestination: showsSeeAll && !(request.results?.isEmpty ?? true) ? seeAllDestination : nil)
                 .padding(.horizontal)
-            
+
             if verticalDirection {
-                StandardVerticalStackView(items: infos) { info in
+                StandardVerticalStackView(items: request.results) { info in
                     Filter.CardView(info)
                         .frame(width: itemWidth, height: itemHeight)
                 }
             } else {
                 if let rowCount = rowCount {
-                    StandardSectionView(infos.dividesToGroup(of: rowCount), id: \.self) { group in
+                    StandardSectionView(request.results?.dividesToGroup(of: rowCount), id: \.self) { group in
                         VStack(alignment: .leading, spacing: 15) {
                             ForEach(group) { info in
-                                Filter.CardView(info)
-                                    .frame(width: itemWidth, height: itemHeight)
-                                if let index = group.firstIndex { $0.id == info.id }, index != group.count - 1 {
+                                Filter.CardView(info).frame(width: itemWidth, height: itemHeight)
+                                if let index = group.index(matching: info), index != group.count - 1 {
                                     Divider()
                                 }
                             }
                         }
                     }
                 } else {
-                    StandardSectionView(infos) { info in
-                        Filter.CardView(info)
-                            .frame(width: itemWidth, height: itemHeight)
+                    StandardSectionView(request.results) { info in
+                        Filter.CardView(info).frame(width: itemWidth, height: itemHeight)
                     }
                 }
             }
         }
-        .onReceive(request.results) { results in
-            infos = results
-        }
     }
     
-    @ViewBuilder
     var seeAllDestination: some View {
-        let cardType = Filter.CardView.self
-        if (cardType == EventCardView.self) || (cardType == SeriesCardView.self) {
-            ScrollView {
-                StandardVerticalStackView(items: infos) { info in
+        ScrollView {
+            let cardType = Filter.CardView.self
+            if (cardType == EventCardView.self) || (cardType == SeriesCardView.self) {
+                StandardVerticalStackView(items: request.results) { info in
                     Filter.CardView(info)
                 }
-            }
-        } else {
-            ScrollView {
-                StandardGridView(items: infos) { Filter.CardView($0) }
+            } else {
+                StandardGridView(items: request.results) { Filter.CardView($0) }
             }
         }
     }
@@ -225,38 +178,58 @@ extension StandardSectionView where Item: Identifiable, Item.ID == ID {
 }
 
 struct StandardGridView<Item, ItemView>: View where Item: Identifiable, ItemView: View {
-    var items: [Item]
+    var items: [Item]?
     var columnsCount = 2
     @ViewBuilder var viewForItem: (Item) -> ItemView
     
     var columns: [GridItem] { Array(repeating: GridItem(.flexible(), spacing: 10), count: columnsCount) }
-    
+
     var body: some View {
-        LazyVGrid(columns: columns, spacing: 20) {
-            ForEach(items) { item in
-                viewForItem(item)
+        if let items = items {
+            if items.isEmpty {
+                Text("Empty")
+            } else {
+                LazyVGrid(columns: columns, spacing: 20) {
+                    ForEach(items) { item in
+                        viewForItem(item)
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
+                .padding()
             }
+        } else {
+            ProgressView()
+                .scaleEffect(1.5)
+                .padding()
         }
-        .buttonStyle(PlainButtonStyle())
-        .padding()
     }
 }
 
 struct StandardVerticalStackView<Item, ItemView>: View where Item: Identifiable, ItemView: View {
-    var items: [Item]
+    var items: [Item]?
     @ViewBuilder var viewForItem: (Item) -> ItemView
     
     var body: some View {
-        VStack {
-            ForEach(items) { item in
-                viewForItem(item)
-                if let index = items.firstIndex { $0.id == item.id }, index != items.count - 1 {
-                    Divider()
+        if let items = items {
+            if items.isEmpty {
+                Text("Empty")
+            } else {
+                VStack {
+                    ForEach(items) { item in
+                        viewForItem(item)
+                        if let index = items.index(matching: item), index != items.count - 1 {
+                            Divider()
+                        }
+                    }
                 }
+                .buttonStyle(PlainButtonStyle())
+                .padding(.vertical)
             }
+        } else {
+            ProgressView()
+                .scaleEffect(1.5)
+                .padding()
         }
-        .buttonStyle(PlainButtonStyle())
-        .padding(.vertical)
     }
 }
 
@@ -395,7 +368,7 @@ struct ComicCardView: MarvelCardView {
 }
 
 struct EventCardView: MarvelCardView {
-    private let defaultSize: CGFloat = 70
+    let defaultSize: CGFloat = 70
     let event: EventInfo
     
     init(_ info: EventInfo) {
@@ -546,6 +519,8 @@ struct CreatorCardView: MarvelCardView {
             VStack {
                 Image.soobinThumbnail(width: 100, height: 100)
                     .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.06), radius: 5, x: 5, y: 5)
+                    .shadow(color: .black.opacity(0.06), radius: 5, x: -5, y: -5)
                 Text(creator.fullName)
                     .fontWeight(.medium)
             }
@@ -554,143 +529,7 @@ struct CreatorCardView: MarvelCardView {
     }
 }
 
-struct CategoryCardView: View {
-    let category: String
-    
-    var body: some View {
-        ZStack(alignment: .leading) {
-            RadialGradient(gradient: Gradient(colors: [.purple, .blue]), center: .topLeading, startRadius: 5, endRadius: 500)
-            Text(category)
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(.white)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: 130)
-        }
-        .cornerRadius(5.0)
-        .aspectRatio(2.2, contentMode: .fit)
-        .frame(width: 220)
-    }
-}
-
-struct CategoriesSectionView: View {
-    @Binding var tabSelection: Int
-    
-    var body: some View {
-        VStack {
-            Divider().padding(.horizontal)
-            StandardHeaderView<AnyView>(title: "Categories").padding(.horizontal)
-            StandardSectionView(Category.allCases) { category in
-                Group {
-                    if category == .comics {
-                        Button {
-                            tabSelection = 2
-                        } label: {
-                            CategoryCardView(category: category.rawValue.capitalized)
-                        }
-                    } else {
-                        NavigationLink(destination: category.destination) {
-                            CategoryCardView(category: category.rawValue.capitalized)
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    enum Category: String, CaseIterable, Identifiable {
-        case characters, comics, events, series
-        
-        var id: String { self.rawValue }
-        
-        @ViewBuilder
-        var destination: some View {
-            switch self {
-            case .characters:
-                CharactersView()
-            case .events:
-                EventsView()
-            case .series:
-                SeriesView()
-            case .comics:
-                EmptyView()
-            }
-        }
-    }
-}
-
-struct FeaturedComicCardView: View {
-    let comic: ComicInfo
-    
-    var screenWidth: CGFloat { UIScreen.main.bounds.width }
-    
-    var body: some View {
-        NavigationLink(destination: ComicDetailsView(comic: comic)) {
-            VStack(alignment: .leading) {
-                Divider()
-                Text("New Release".uppercased())
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .foregroundColor(.purple)
-                Text(comic.title)
-                    .font(.title2)
-                Text("Published by Marvel.")
-                    .font(.title3)
-                    .foregroundColor(.gray)
-                Image.soobinThumbnail(width: screenWidth * 0.9, height: 150)
-            }
-            .frame(maxWidth: screenWidth * 0.9)
-        }
-    }
-}
-
-struct FeaturedComicsView: View {
-    let request: ComicInfoRequest
-    
-    @State private var comics = [ComicInfo]()
-    
-    init(_ filter: ComicFilter) {
-        request = ComicInfoRequest.create(filter, limit: 10)
-    }
-    
-    var body: some View {
-        StandardSectionView(comics) { comic in
-            FeaturedComicCardView(comic: comic)
-        }
-        .onReceive(request.results) { results in
-            comics = results
-        }
-    }
-}
-
-
-// MARK: - Default Search Result View (Categories)
-
-struct DefaultSearchResultsView: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Divider()
-                .padding(.horizontal)
-            
-            StandardHeaderView<AnyView>(title: "Browse Categories")
-                .padding(.horizontal)
-            
-            StandardGridView(items: Array(ComicFilter.Format.allCases.dropFirst())) { format in
-                NavigationLink(destination: ComicByFormatView(format: format)) {
-                    ZStack(alignment: .bottomLeading) {
-                        RadialGradient(gradient: Gradient(colors: [.purple, .blue]), center: .topLeading, startRadius: 5, endRadius: 500)
-                        Text(format.title)
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.leading)
-                            .padding()
-                    }
-                    .cornerRadius(10.0)
-                    .aspectRatio(1.5, contentMode: .fit)
-                }
-            }
-        }
-    }
-}
+// MARK: - Loading Indicator
 
 struct LoadingView: View {
     var body: some View {

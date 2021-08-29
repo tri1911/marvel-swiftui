@@ -9,14 +9,12 @@ import SwiftUI
 
 // TODO: Request in body will be recreated frequently
 struct SeriesView: View {
-    init() {
-        print("SeriesView created...")
-    }
-    
     var body: some View {
         ScrollView {
-            // TODO: Sections based on comic format contains
-            MarvelSectionView(SeriesFilter(orderBy: "-startYear"), showsSeeAll: false, verticalDirection: true)
+            MarvelSectionView(SeriesFilter(contains: .comic, orderBy: "-startYear"), title: "Contains Comics", rowCount: 2)
+            MarvelSectionView(SeriesFilter(contains: .graphicNovel, orderBy: "-startYear"), title: "Contains Graphic Novels", rowCount: 2)
+            MarvelSectionView(SeriesFilter(contains: .hardcover, orderBy: "-startYear"), title: "Contains HardCovers", rowCount: 2)
+            MarvelSectionView(SeriesFilter(contains: .magazine, orderBy: "-startYear"), title: "Contains Magazines", rowCount: 2)
         }
         .navigationTitle("Series")
     }

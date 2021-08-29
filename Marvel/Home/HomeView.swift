@@ -15,7 +15,7 @@ struct HomeView: View {
             ScrollView(.vertical, showsIndicators: false) {
                 VStack(spacing: 40) {
                     // Overview
-                    FeaturedComicsView(ComicFilter(formatType: .comic, dateDescriptor: .thisMonth, startYear: 2021, orderBy: "issueNumber"))
+                    FeaturedComicsSectionView(ComicFilter(formatType: .comic, dateDescriptor: .thisMonth, startYear: 2021, orderBy: "issueNumber"))
                     
                     // Categories
                     CategoriesSectionView(tabSelection: $tabSelection)
